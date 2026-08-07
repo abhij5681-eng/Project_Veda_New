@@ -1,5 +1,6 @@
-// This tells React: "Use the live URL if we are in production, otherwise use localhost."
-const API_BASE_URL = "https://project-veda-new.onrender.com";
+
+// To this:
+const API_BASE = "https://project-veda-new.onrender.com";
 
 export async function loginUser(email, password) {
   const res = await fetch(`${API_BASE}/auth/login`, {
@@ -10,6 +11,7 @@ export async function loginUser(email, password) {
   if (!res.ok) throw new Error("Login failed");
   return res.json();
 }
+// ... (the rest of your functions using API_BASE will now work perfectly)
 
 export async function getInventory(userEmail) {
   const res = await fetch(`${API_BASE}/inventory/${userEmail}`);
