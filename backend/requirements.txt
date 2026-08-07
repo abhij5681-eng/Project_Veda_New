@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+google-genai
+chromadb
+supabase
+pymupdf
+bcrypt
+python-dotenv
+python-multipart
+pillow
