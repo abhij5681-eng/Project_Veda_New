@@ -1,6 +1,6 @@
 
 // To this:
-const API_BASE = "https://project-veda-new.onrender.com";
+const API_BASE = "https://project-veda-new.onrender.com/api";
 
 export async function loginUser(email, password) {
   const res = await fetch(`${API_BASE}/auth/login`, {
