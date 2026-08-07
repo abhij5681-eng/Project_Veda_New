@@ -9,4 +9,3 @@ python-dotenv
 python-multipart
 pillow
 PyPDF2
-sentence-transformers
