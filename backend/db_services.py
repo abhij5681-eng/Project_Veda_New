@@ -2,31 +2,28 @@ import os
 import io
 import PyPDF2
 from supabase import create_client, Client
-from sentence_transformers import SentenceTransformer
+from google import genai
+from google.genai import types
 
-# Keep a global placeholder so it only loads once into memory, but doesn't block startup
-_embedder = None
+# Delete the SentenceTransformer model line entirely!
 
-def get_embedder():
-    global _embedder
-    if _embedder is None:
-        print("⏳ Loading tiny 80MB embedding model...")
-        # Ultra-lightweight 384-dimension model
-        _embedder = SentenceTransformer('all-MiniLM-L6-v2') 
-        print("✅ Local embedding model loaded successfully!")
-    return _embedder
+def get_embedding(text: str):
+    """Generates embeddings using Gemini's free API instead of a local model"""
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+    
+    response = client.models.embed_content(
+        model="gemini-embedding-001",  # <-- Make sure it says gemini-embedding-001 here
+        contents=text,
+        config=types.EmbedContentConfig(output_dimensionality=384) 
+    )
+    
+    return response.embeddings[0].values
 
 def get_supabase() -> Client:
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_KEY")
     return create_client(url, key)
 
-def get_embedding(text: str):
-    model = get_embedder()
-    vector = model.encode(text)
-    return vector.tolist()
-
-# ... keep process_pdf, process_raw_text, and the rest of the file below exactly as they are ...
 
 def process_pdf(file_bytes):
     """Extracts text from PDF bytes and splits it into manageable chunks."""
