@@ -1,5 +1,5 @@
 // This tells React: "Use the live URL if we are in production, otherwise use localhost."
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE_URL = "https://project-veda-new.onrender.com";
 
 export async function loginUser(email, password) {
   const res = await fetch(`${API_BASE}/auth/login`, {
