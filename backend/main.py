@@ -28,14 +28,16 @@ from ai_services import ask_veda_stream, generate_with_failover_stream
 app = FastAPI(title="Project Veda API")
 
 # --- PRODUCTION CORS SETUP ---
+# --- PRODUCTION CORS SETUP ---
 origins = [
     "http://localhost:5173",       
     "http://127.0.0.1:5173",
+    "https://project-veda-taupe.vercel.app",  # 👈 Hardcoded here so it never misses
 ]
 
 # Add the production frontend URL if it exists in the environment variables
 frontend_url = os.getenv("FRONTEND_URL")
-if frontend_url:
+if frontend_url and frontend_url not in origins:
     origins.append(frontend_url)
 
 app.add_middleware(
@@ -45,7 +47,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # Request Models
 class LoginReq(BaseModel):
     email: str
