@@ -2,18 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { getChatHistory, streamVedaChat, generateToolStream, replaceChatHistory } from '../api';
 import { Send, ScrollText, FileQuestion, Pencil, Sparkles, Menu } from 'lucide-react';
 
-// Smooth Typewriter Component
 const TypewriterMessage = ({ content, isLast, loading, formatMessage }) => {
   const [displayed, setDisplayed] = useState(content);
 
   useEffect(() => {
-    // If it's a past message or the stream is finished, show it instantly
     if (!isLast || !loading) {
       setDisplayed(content);
       return;
     }
-
-    // If new text has arrived from the API, reveal it smoothly (2 chars at a time)
     if (content.length > displayed.length) {
       const timeout = setTimeout(() => {
         setDisplayed(content.slice(0, displayed.length + 2));
@@ -49,14 +45,12 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
     }
   }, [activeSubject, userEmail]);
 
-  // Keep chat scrolled to bottom while typing
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [messages, loading]);
 
   const formatMessage = (text) => {
     if (!text) return null;
-    
     let cleanText = text;
     if (cleanText.startsWith('{"result":"')) {
       cleanText = cleanText
@@ -65,7 +59,6 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
         .replace(/\\n/g, '\n')       
         .replace(/\\"/g, '"');       
     }
-
     const parts = cleanText.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, index) => {
       if (part.startsWith('**') && part.endsWith('**')) {
@@ -76,7 +69,6 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
   };
 
   const handleSend = async (overrideText = null) => {
-    // Prevents empty queries from being sent to the backend
     const userQ = overrideText || input;
     if (!userQ.trim() || !activeSubject) return;
     
@@ -99,10 +91,9 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
         });
       });
     } catch (error) {
-      console.error("Chat Error:", error);
       setMessages((prev) => {
         const last = { ...prev[prev.length - 1] };
-        last.content = "*(System Note: I cannot connect to the server right now. Please check your internet connection or make sure the backend is running!)*";
+        last.content = "*(System Note: I cannot connect to the server right now.)*";
         return [...prev.slice(0, -1), last];
       });
     } finally {
@@ -143,10 +134,9 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
       });
       setActiveQuiz(true);
     } catch (error) {
-      console.error("Quiz Tool Error:", error);
       setMessages((prev) => {
         const last = { ...prev[prev.length - 1] };
-        last.content = "*(System Note: I cannot connect to the server right now. Please check your internet connection or make sure the backend is running!)*";
+        last.content = "*(System Note: I cannot connect to the server right now.)*";
         return [...prev.slice(0, -1), last];
       });
       setActiveQuiz(false);
@@ -160,10 +150,8 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
     setLoading(true);
 
     const evaluationPrompt = `The student is taking an interactive quiz. Their answer to the previous question is: "${answer}". 
-    1. Evaluate if this is correct based on our notes. Compliment them warmly if correct, or gently and politely explain the correct answer with the reason if incorrect. 
-    2. Then, ask the NEXT single multiple-choice question with options A, B, C, D. 
-    3. DO NOT ask more than one question. 
-    4. DO NOT provide the answer key for the new question.`;
+    1. Evaluate if this is correct based on our notes.
+    2. Ask the NEXT single multiple-choice question. DO NOT ask more than one.`;
 
     try {
       await streamVedaChat(userEmail, activeSubject, evaluationPrompt, (chunk) => {
@@ -174,10 +162,9 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
         });
       });
     } catch (error) {
-      console.error("Quiz Answer Error:", error);
       setMessages((prev) => {
         const last = { ...prev[prev.length - 1] };
-        last.content = "*(System Note: I cannot connect to the server right now. Please check your internet connection or make sure the backend is running!)*";
+        last.content = "*(System Note: Connection error.)*";
         return [...prev.slice(0, -1), last];
       });
     } finally {
@@ -203,10 +190,9 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
         });
       });
     } catch (error) {
-      console.error("Study Guide Tool Error:", error);
       setMessages((prev) => {
         const last = { ...prev[prev.length - 1] };
-        last.content = "*(System Note: I cannot connect to the server right now. Please check your internet connection or make sure the backend is running!)*";
+        last.content = "*(System Note: Connection error.)*";
         return [...prev.slice(0, -1), last];
       });
     } finally {
@@ -218,7 +204,7 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-dark)' }}>
         {isMobile && (
-          <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
+          <div style={{ flexShrink: 0, padding: '1rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
             <button onClick={onOpenSidebar} style={{ background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Menu size={24} /> <span style={{ fontWeight: '600' }}>Menu</span>
             </button>
@@ -234,8 +220,8 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-dark)' }}>
       
-      {/* Header */}
-      <div style={{ padding: isMobile ? '1rem' : '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)' }}>
+      {/* Header - flexShrink: 0 added so it never disappears! */}
+      <div style={{ flexShrink: 0, padding: isMobile ? '1rem' : '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {isMobile && (
             <button onClick={onOpenSidebar} style={{ background: 'transparent', color: 'white', padding: '0.25rem' }}>
@@ -254,9 +240,8 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
         </div>
       </div>
 
-      {/* Chat History & Welcome Screen */}
+      {/* Chat History */}
       <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1rem' : '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        
         {messages.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', gap: '1.5rem', marginTop: '5vh' }}>
             <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '1.5rem', borderRadius: '50%', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
@@ -266,24 +251,11 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
               <h2 style={{ color: 'var(--text-main)', fontSize: '1.75rem', fontWeight: '700', marginBottom: '0.5rem' }}>Project Veda</h2>
               <p style={{ color: 'var(--primary)', fontWeight: '500', letterSpacing: '1px', textTransform: 'uppercase', fontSize: '0.8rem' }}>Your Context-Aware AI Tutor</p>
             </div>
-            <p style={{ maxWidth: '550px', textAlign: 'center', lineHeight: '1.6', fontSize: '0.95rem' }}>
-              Veda uses strictly locked local memory (Retrieval-Augmented Generation) to learn from the documents you upload. It will only provide answers and citations based on your trusted notes.
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', width: '100%', maxWidth: '550px', flexDirection: isMobile ? 'column' : 'row' }}>
-              <div style={{ background: 'var(--bg-panel)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border)', flex: 1, textAlign: 'center' }}>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>Chat with <strong>{activeSubject}</strong> in the input below.</p>
-              </div>
-              <div style={{ background: 'var(--bg-panel)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border)', flex: 1, textAlign: 'center' }}>
-                 <p style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>Use <strong>Quiz Me</strong> above to test your knowledge.</p>
-              </div>
-            </div>
           </div>
         )}
 
-        {/* Messages Loop */}
         {messages.map((m, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-            
             {m.role === 'user' ? (
               editingIndex === i ? (
                 <div style={{ width: '100%', maxWidth: '80%', background: 'var(--bg-panel)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
@@ -320,14 +292,13 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
                 />
               </div>
             )}
-            
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div style={{ padding: isMobile ? '1rem' : '1.5rem 2rem', borderTop: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
+      {/* Input Area - flexShrink: 0 added! */}
+      <div style={{ flexShrink: 0, padding: isMobile ? '1rem' : '1.5rem 2rem', borderTop: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
         <div style={{ display: 'flex', gap: '0.5rem', maxWidth: '800px', margin: '0 auto' }}>
           <input 
             style={{ flex: 1, padding: '1rem 1.25rem', fontSize: '1rem', background: 'rgba(0,0,0,0.2)' }} 

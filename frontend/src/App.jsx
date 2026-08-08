@@ -9,11 +9,9 @@ export default function App() {
   const [inventory, setInventory] = useState({});
   const [activeSubject, setActiveSubject] = useState(null);
 
-  // Responsive Screen States
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Listen for screen size changes
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
@@ -53,9 +51,8 @@ export default function App() {
   }
 
   return (
-   <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', position: 'relative' }}>
       
-      {/* Mobile Dark Overlay (closes sidebar when clicked) */}
       {isMobile && sidebarOpen && (
         <div 
           onClick={() => setSidebarOpen(false)}
@@ -63,7 +60,6 @@ export default function App() {
         />
       )}
 
-      {/* Sliding Sidebar Container */}
       <div style={{
         position: isMobile ? 'absolute' : 'relative',
         left: isMobile ? (sidebarOpen ? '0' : '-280px') : '0',
@@ -77,7 +73,7 @@ export default function App() {
           activeSubject={activeSubject}
           setActiveSubject={(sub) => { 
             setActiveSubject(sub); 
-            if(isMobile) setSidebarOpen(false); // Auto-close sidebar on mobile after selecting a subject!
+            if(isMobile) setSidebarOpen(false); 
           }}
           refreshInventory={refreshInventory}
           onLogout={handleLogout}
@@ -86,8 +82,7 @@ export default function App() {
         />
       </div>
 
-      {/* Main Chat Area */}
-      <div style={{ flex: 1, width: isMobile ? '100%' : 'calc(100% - 280px)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, height: '100%', width: isMobile ? '100%' : 'calc(100% - 280px)', display: 'flex', flexDirection: 'column' }}>
         <ChatInterface 
           userEmail={userEmail}
           activeSubject={activeSubject}
