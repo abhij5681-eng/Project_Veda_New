@@ -216,7 +216,7 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
 
   if (!activeSubject) {
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-dark)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-dark)' }}>
         {isMobile && (
           <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
             <button onClick={onOpenSidebar} style={{ background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -232,7 +232,7 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-dark)' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-dark)' }}>
       
       {/* Header */}
       <div style={{ padding: isMobile ? '1rem' : '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)' }}>

@@ -82,7 +82,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
   };
 
   return (
-    <div style={{ width: '280px', backgroundColor: 'var(--bg-panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <div style={{ width: '280px', backgroundColor: 'var(--bg-panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100%' }}>
       
       {/* Profile & Info Area */}
       <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
