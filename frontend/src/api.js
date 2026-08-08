@@ -1,5 +1,11 @@
+import { createClient } from '@supabase/supabase-js';
 
-// To this:
+// Initialize Supabase client for preferences sync
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Your working Render Backend API Base
 const API_BASE = "https://project-veda-new.onrender.com/api";
 
 export async function loginUser(email, password) {
@@ -11,7 +17,6 @@ export async function loginUser(email, password) {
   if (!res.ok) throw new Error("Login failed");
   return res.json();
 }
-// ... (the rest of your functions using API_BASE will now work perfectly)
 
 export async function getInventory(userEmail) {
   const res = await fetch(`${API_BASE}/inventory/${userEmail}`);
@@ -54,7 +59,6 @@ export async function streamVedaChat(userEmail, subject, question, onChunk) {
   }
 }
 
-// Add or replace this function in api.js
 export async function generateToolStream(userEmail, subject, toolType, onChunk) {
   const response = await fetch(`${API_BASE}/tools/generate`, {
     method: "POST",
@@ -75,6 +79,7 @@ export async function generateToolStream(userEmail, subject, toolType, onChunk) 
   }
   return fullText;
 }
+
 export async function requestOtp(email, password) {
   const res = await fetch(`${API_BASE}/auth/send-otp`, {
     method: "POST",
@@ -100,6 +105,7 @@ export async function verifyOtp(email, otp, password) {
   }
   return res.json();
 }
+
 export async function deleteFile(userEmail, subject, filename) {
   const res = await fetch(`${API_BASE}/file?filename=${encodeURIComponent(filename)}&subject=${encodeURIComponent(subject)}&user_email=${encodeURIComponent(userEmail)}`, {
     method: "DELETE",
@@ -107,6 +113,7 @@ export async function deleteFile(userEmail, subject, filename) {
   if (!res.ok) throw new Error("Failed to delete file");
   return res.json();
 }
+
 export async function deleteWorkspace(userEmail, subject) {
   const res = await fetch(`${API_BASE}/workspace?subject=${encodeURIComponent(subject)}&user_email=${encodeURIComponent(userEmail)}`, {
     method: "DELETE",
@@ -114,6 +121,7 @@ export async function deleteWorkspace(userEmail, subject) {
   if (!res.ok) throw new Error("Failed to delete workspace");
   return res.json();
 }
+
 export async function replaceChatHistory(userEmail, subject, messages) {
   const res = await fetch(`${API_BASE}/chat/history`, {
     method: "PUT",
@@ -122,4 +130,39 @@ export async function replaceChatHistory(userEmail, subject, messages) {
   });
   if (!res.ok) throw new Error("Failed to update history");
   return res.json();
+}
+
+// Fetch user preferences from Supabase (safe from 406 errors)
+export async function getUserPreferences(email) {
+  if (!email) return null;
+  try {
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .select('*')
+      .eq('email', email);
+    
+    if (error) {
+      console.error("Error fetching preferences:", error);
+      return null;
+    }
+    
+    return data && data.length > 0 ? data[0] : null;
+  } catch (err) {
+    console.error("Failed to load preferences", err);
+    return null;
+  }
+}
+
+// Save or update user preferences in Supabase
+export async function updateUserPreferences(email, preferences) {
+  if (!email) return;
+  try {
+    const { error } = await supabase
+      .from('user_preferences')
+      .upsert({ email, ...preferences, updated_at: new Date() });
+    
+    if (error) console.error("Error saving preferences:", error);
+  } catch (err) {
+    console.error("Failed to save preferences", err);
+  }
 }

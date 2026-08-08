@@ -3,7 +3,8 @@ import Auth from './components/Auth';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import Settings from './components/Settings';
-import { getInventory } from './api';
+// Import the new API functions
+import { getInventory, getUserPreferences, updateUserPreferences } from './api';
 
 export default function App() {
   const [userEmail, setUserEmail] = useState(localStorage.getItem('veda_user') || null); 
@@ -13,10 +14,9 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // 💥 NEW: View Router State
   const [currentView, setCurrentView] = useState('chat'); // 'chat' | 'settings'
   
-  // 💥 NEW: Separated Color States
+  // States initialized from localStorage as a fallback
   const [theme, setTheme] = useState(localStorage.getItem('veda_theme') || 'dark');
   const [chatColor, setChatColor] = useState(localStorage.getItem('veda_chat_color') || '#3b82f6');
   const [workspaceColor, setWorkspaceColor] = useState(localStorage.getItem('veda_workspace_color') || '#10b981');
@@ -27,9 +27,31 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Fetch inventory AND Supabase preferences when user logs in
   useEffect(() => {
-    if (userEmail) refreshInventory();
+    if (userEmail) {
+      refreshInventory();
+      loadCloudPreferences(userEmail);
+    }
   }, [userEmail]);
+
+  const loadCloudPreferences = async (email) => {
+    const prefs = await getUserPreferences(email);
+    if (prefs) {
+      if (prefs.theme) {
+        setTheme(prefs.theme);
+        localStorage.setItem('veda_theme', prefs.theme);
+      }
+      if (prefs.chat_color) {
+        setChatColor(prefs.chat_color);
+        localStorage.setItem('veda_chat_color', prefs.chat_color);
+      }
+      if (prefs.workspace_color) {
+        setWorkspaceColor(prefs.workspace_color);
+        localStorage.setItem('veda_workspace_color', prefs.workspace_color);
+      }
+    }
+  };
 
   const refreshInventory = async () => {
     if (!userEmail) return;
@@ -57,16 +79,19 @@ export default function App() {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     localStorage.setItem('veda_theme', newTheme);
+    updateUserPreferences(userEmail, { theme: newTheme, chat_color: chatColor, workspace_color: workspaceColor });
   };
 
   const handleChatColorChange = (color) => {
     setChatColor(color);
     localStorage.setItem('veda_chat_color', color);
+    updateUserPreferences(userEmail, { theme, chat_color: color, workspace_color: workspaceColor });
   };
 
   const handleWorkspaceColorChange = (color) => {
     setWorkspaceColor(color);
     localStorage.setItem('veda_workspace_color', color);
+    updateUserPreferences(userEmail, { theme, chat_color: chatColor, workspace_color: color });
   };
 
   if (!userEmail) {
@@ -96,7 +121,7 @@ export default function App() {
           activeSubject={activeSubject}
           setActiveSubject={(sub) => { 
             setActiveSubject(sub); 
-            setCurrentView('chat'); // Auto-switch to chat when picking a workspace
+            setCurrentView('chat'); 
             if(isMobile) setSidebarOpen(false); 
           }}
           refreshInventory={refreshInventory}
@@ -104,11 +129,10 @@ export default function App() {
           isMobile={isMobile}
           onClose={() => setSidebarOpen(false)}
           onOpenSettings={() => { setCurrentView('settings'); if(isMobile) setSidebarOpen(false); }}
-          workspaceColor={workspaceColor} // 💥 Passed Down!
+          workspaceColor={workspaceColor}
         />
       </div>
 
-      {/* 💥 NEW: Router renders Settings OR Chat */}
       <div style={{ flex: 1, height: '100%', minHeight: 0, width: isMobile ? '100%' : 'calc(100% - 280px)', display: 'flex', flexDirection: 'column' }}>
         {currentView === 'settings' ? (
           <Settings 

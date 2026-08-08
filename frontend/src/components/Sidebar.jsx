@@ -8,6 +8,9 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
   const [uploadStatus, setUploadStatus] = useState('');
   const [hiddenFiles, setHiddenFiles] = useState([]);
   
+  // 💥 NEW: Drag-and-Drop visual state
+  const [isDragging, setIsDragging] = useState(false);
+  
   const subjects = Object.keys(inventory || {});
   const activeFiles = activeSubject && inventory && inventory[activeSubject] 
     ? inventory[activeSubject].filter(file => !hiddenFiles.includes(file)) 
@@ -20,15 +23,14 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
     }
   };
 
-  const handleFileUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0 || !activeSubject) return;
+  const processFiles = async (filesArray) => {
+    if (filesArray.length === 0 || !activeSubject) return;
     
     setUploading(true);
-    setUploadStatus(`🔮 Memorizing ${files.length} file(s)...`);
+    setUploadStatus(`🔮 Memorizing ${filesArray.length} file(s)...`);
     
     try {
-      for (const file of files) {
+      for (const file of filesArray) {
         await uploadFile(userEmail, activeSubject, file);
         setHiddenFiles(prev => prev.filter(f => f !== file.name));
       }
@@ -39,9 +41,31 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
       setUploadStatus('❌ Failed to upload some files.'); 
     } finally { 
       setUploading(false); 
-      e.target.value = null; 
       setTimeout(() => setUploadStatus(''), 3000);
     }
+  };
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    await processFiles(files);
+    e.target.value = null;
+  };
+
+  // 💥 NEW: Drop Handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    await processFiles(files);
   };
 
   const handleDeleteFile = async (filename) => {
@@ -98,7 +122,6 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
 
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 1rem 0', wordBreak: 'break-all' }}>{userEmail}</p>
         
-        {/* 💥 NEW: Clean Settings & Logout routing */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button onClick={onOpenSettings} style={{ flex: 1, padding: '0.5rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
             <Settings size={14} /> Settings
@@ -139,7 +162,6 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '0.6rem 0.75rem',
-                  /* 💥 NEW: Dynamically applies chosen Workspace Color! */
                   backgroundColor: activeSubject === sub ? workspaceColor : 'transparent',
                   color: activeSubject === sub ? 'white' : 'var(--text-main)',
                   borderRadius: '8px',
@@ -184,18 +206,36 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
             ))}
           </div>
 
-          <p style={{ fontSize: '0.85rem', marginBottom: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <UploadCloud size={16} /> Offer Texts
-          </p>
-          
-          <input 
-            type="file" 
-            accept=".pdf,.png,.jpg,.jpeg" 
-            multiple 
-            onChange={handleFileUpload} 
-            disabled={uploading} 
-            style={{ width: '100%', fontSize: '0.75rem', padding: '0.5rem' }} 
-          />
+          {/* 💥 NEW: Interactive Drag-and-Drop Zone */}
+          <div 
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            style={{ 
+              border: `2px dashed ${isDragging ? workspaceColor : 'var(--border)'}`, 
+              backgroundColor: isDragging ? `${workspaceColor}15` : 'var(--bg-panel)', 
+              borderRadius: '8px', 
+              padding: '1rem', 
+              textAlign: 'center',
+              transition: 'all 0.2s ease',
+              cursor: 'pointer'
+            }}
+          >
+            <UploadCloud size={22} color={isDragging ? workspaceColor : 'var(--text-muted)'} style={{ marginBottom: '0.4rem' }} />
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-main)', marginBottom: '0.25rem', fontWeight: '500' }}>
+              {isDragging ? "Drop files here!" : "Drag & drop files"}
+            </p>
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>or click to browse</p>
+            
+            <input 
+              type="file" 
+              accept=".pdf,.png,.jpg,.jpeg" 
+              multiple 
+              onChange={handleFileUpload} 
+              disabled={uploading} 
+              style={{ width: '100%', fontSize: '0.7rem' }} 
+            />
+          </div>
           
           {uploadStatus && (
             <p style={{ fontSize: '0.8rem', color: uploadStatus.includes('❌') ? 'var(--danger)' : 'var(--success)', marginTop: '0.75rem', textAlign: 'center' }}>
