@@ -51,7 +51,8 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', position: 'relative' }}>
+    // 💥 FIX: Added position fixed, top 0, left 0 to prevent body scrolling completely
+    <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', position: 'fixed', top: 0, left: 0 }}>
       
       {isMobile && sidebarOpen && (
         <div 
@@ -82,7 +83,8 @@ export default function App() {
         />
       </div>
 
-      <div style={{ flex: 1, height: '100%', width: isMobile ? '100%' : 'calc(100% - 280px)', display: 'flex', flexDirection: 'column' }}>
+      {/* 💥 FIX: Added minHeight: 0 to force flexbox to stay constrained */}
+      <div style={{ flex: 1, height: '100%', minHeight: 0, width: isMobile ? '100%' : 'calc(100% - 280px)', display: 'flex', flexDirection: 'column' }}>
         <ChatInterface 
           userEmail={userEmail}
           activeSubject={activeSubject}

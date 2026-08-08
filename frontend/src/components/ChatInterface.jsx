@@ -202,7 +202,7 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
 
   if (!activeSubject) {
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-dark)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-dark)' }}>
         {isMobile && (
           <div style={{ flexShrink: 0, padding: '1rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
             <button onClick={onOpenSidebar} style={{ background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -218,9 +218,9 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-dark)' }}>
+    // 💥 FIX: minHeight: 0 stops the chat from expanding beyond the screen height
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-dark)' }}>
       
-      {/* Header - flexShrink: 0 added so it never disappears! */}
       <div style={{ flexShrink: 0, padding: isMobile ? '1rem' : '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {isMobile && (
@@ -240,8 +240,8 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
         </div>
       </div>
 
-      {/* Chat History */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1rem' : '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* 💥 FIX: minHeight: 0 forces the scrolling to happen INSIDE this box only */}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: isMobile ? '1rem' : '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {messages.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', gap: '1.5rem', marginTop: '5vh' }}>
             <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '1.5rem', borderRadius: '50%', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
@@ -297,7 +297,6 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - flexShrink: 0 added! */}
       <div style={{ flexShrink: 0, padding: isMobile ? '1rem' : '1.5rem 2rem', borderTop: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
         <div style={{ display: 'flex', gap: '0.5rem', maxWidth: '800px', margin: '0 auto' }}>
           <input 
