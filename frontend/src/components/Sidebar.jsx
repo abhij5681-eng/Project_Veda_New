@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { uploadFile, deleteFile, deleteWorkspace } from '../api';
-import { BookOpen, Plus, LogOut, UploadCloud, Library, Trash2, FileText, Info, X } from 'lucide-react';
+// 💥 NEW: Imported Sun and Moon icons!
+import { BookOpen, Plus, LogOut, UploadCloud, Library, Trash2, FileText, Info, X, Sun, Moon } from 'lucide-react';
 
-export default function Sidebar({ userEmail, inventory, activeSubject, setActiveSubject, refreshInventory, onLogout, isMobile, onClose }) {
+export default function Sidebar({ userEmail, inventory, activeSubject, setActiveSubject, refreshInventory, onLogout, isMobile, onClose, theme, toggleTheme }) {
   const [newSubject, setNewSubject] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
@@ -30,12 +31,8 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
     try {
       for (const file of files) {
         await uploadFile(userEmail, activeSubject, file);
-        
-        // Un-hide the file if it was previously deleted in this session
         setHiddenFiles(prev => prev.filter(f => f !== file.name));
       }
-      
-      // Small delay to ensure Supabase commits new file rows
       await new Promise((resolve) => setTimeout(resolve, 300));
       await refreshInventory();
       setUploadStatus('✨ All texts mastered!');
@@ -50,16 +47,12 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
 
   const handleDeleteFile = async (filename) => {
     if (window.confirm(`Are you sure you want to remove "${filename}" from Veda's memory?`)) {
-      
-      // OPTIMISTIC UI: Instantly hide the file from the screen
       setHiddenFiles(prev => [...prev, filename]);
-      
       try {
         await deleteFile(userEmail, activeSubject, filename);
         await refreshInventory();
       } catch (err) {
         alert("Failed to delete the file.");
-        // If the backend fails, un-hide the file so the user knows it didn't work
         setHiddenFiles(prev => prev.filter(f => f !== filename));
       }
     }
@@ -82,12 +75,11 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
   };
 
   return (
-    <div style={{ width: '280px', backgroundColor: 'var(--bg-panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div style={{ width: '280px', backgroundColor: 'var(--bg-panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100vh' }}>
       
       {/* Profile & Info Area */}
       <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
         
-        {/* Mobile Header with Close Button */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, fontWeight: '600' }}>
             <Library size={20} color="var(--primary)"/> Project Veda
@@ -99,8 +91,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
           )}
         </div>
         
-        {/* Who is Veda? Box */}
-        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border)' }}>
+        <div style={{ background: 'var(--bg-dark)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border)' }}>
           <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-main)', margin: '0 0 0.4rem 0' }}>
             <Info size={14} color="var(--primary)"/> Who is Veda?
           </p>
@@ -110,9 +101,17 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
         </div>
 
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0.75rem 0', wordBreak: 'break-all' }}>{userEmail}</p>
-        <button onClick={onLogout} style={{ width: '100%', padding: '0.5rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.85rem' }}>
-          <LogOut size={16} /> Log Out
-        </button>
+        
+        {/* 💥 NEW: Theme Toggle and Logout Buttons side-by-side */}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={toggleTheme} style={{ flex: 1, padding: '0.5rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />} 
+            {theme === 'dark' ? 'Light' : 'Dark'}
+          </button>
+          <button onClick={onLogout} style={{ flex: 1, padding: '0.5rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', border: '1px solid transparent' }}>
+            <LogOut size={14} /> Log Out
+          </button>
+        </div>
       </div>
 
       {/* Workspace List */}
@@ -124,7 +123,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
             value={newSubject} 
             onChange={(e) => setNewSubject(e.target.value)} 
             onKeyDown={(e) => e.key === 'Enter' && handleCreateWorkspace()} 
-            style={{ flex: 1, padding: '0.5rem', fontSize: '0.85rem' }} 
+            style={{ flex: 1, padding: '0.5rem', fontSize: '0.85rem', background: 'var(--bg-dark)', color: 'var(--text-main)', border: '1px solid var(--border)' }} 
           />
           <button onClick={handleCreateWorkspace} className="btn-primary" style={{ padding: '0.5rem' }}>
             <Plus size={18}/>
@@ -147,7 +146,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
                   alignItems: 'center',
                   padding: '0.6rem 0.75rem',
                   backgroundColor: activeSubject === sub ? 'var(--primary)' : 'transparent',
-                  color: activeSubject === sub ? 'white' : 'var(--text-muted)',
+                  color: activeSubject === sub ? 'white' : 'var(--text-main)',
                   borderRadius: '8px',
                   cursor: 'pointer'
                 }}
@@ -171,7 +170,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
 
       {/* Manage Files & Upload Area */}
       {activeSubject && (
-        <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'rgba(0,0,0,0.1)' }}>
+        <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'var(--bg-dark)' }}>
           
           <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.75rem', color: 'var(--text-muted)' }}>
             Knowledge Base
@@ -179,7 +178,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem', maxHeight: '150px', overflowY: 'auto' }}>
             {activeFiles.length === 0 && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No files uploaded yet.</span>}
             {activeFiles.map(file => (
-              <div key={file} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-dark)', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', border: '1px solid var(--border)' }}>
+              <div key={file} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
                   <FileText size={14} color="var(--primary)" />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }} title={file}>{file}</span>
@@ -192,7 +191,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
           </div>
 
           <p style={{ fontSize: '0.85rem', marginBottom: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <UploadCloud size={16} /> Offer Texts to {activeSubject}
+            <UploadCloud size={16} /> Offer Texts
           </p>
           
           <input 

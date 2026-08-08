@@ -11,6 +11,9 @@ export default function App() {
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // 💥 NEW: Theme State! Defaults to dark, or whatever they saved last.
+  const [theme, setTheme] = useState(localStorage.getItem('veda_theme') || 'dark');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -19,9 +22,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (userEmail) {
-      refreshInventory();
-    }
+    if (userEmail) refreshInventory();
   }, [userEmail]);
 
   const refreshInventory = async () => {
@@ -46,13 +47,20 @@ export default function App() {
     localStorage.removeItem('veda_user'); 
   };
 
+  // 💥 NEW: Toggle Function
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('veda_theme', newTheme);
+  };
+
   if (!userEmail) {
-    return <Auth onLoginSuccess={handleLoginSuccess} />;
+    return <div className={theme === 'light' ? 'light-mode' : ''}><Auth onLoginSuccess={handleLoginSuccess} /></div>;
   }
 
   return (
-    // 💥 FIX: Added position fixed, top 0, left 0 to prevent body scrolling completely
-    <div style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', position: 'fixed', top: 0, left: 0 }}>
+    // 💥 NEW: Applies the light-mode class dynamically
+    <div className={theme === 'light' ? 'light-mode' : ''} style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', position: 'fixed', top: 0, left: 0, backgroundColor: 'var(--bg-dark)', color: 'var(--text-main)' }}>
       
       {isMobile && sidebarOpen && (
         <div 
@@ -80,10 +88,11 @@ export default function App() {
           onLogout={handleLogout}
           isMobile={isMobile}
           onClose={() => setSidebarOpen(false)}
+          theme={theme}
+          toggleTheme={toggleTheme}
         />
       </div>
 
-      {/* 💥 FIX: Added minHeight: 0 to force flexbox to stay constrained */}
       <div style={{ flex: 1, height: '100%', minHeight: 0, width: isMobile ? '100%' : 'calc(100% - 280px)', display: 'flex', flexDirection: 'column' }}>
         <ChatInterface 
           userEmail={userEmail}
@@ -92,7 +101,6 @@ export default function App() {
           onOpenSidebar={() => setSidebarOpen(true)}
         />
       </div>
-      
     </div>
   );
 }

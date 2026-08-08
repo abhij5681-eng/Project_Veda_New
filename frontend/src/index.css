@@ -14,6 +14,17 @@
   --success: #10b981;
 }
 
+/* Keep your existing :root block exactly as it is above this! */
+
+/* Light Mode Overrides */
+.light-mode {
+  --bg-dark: #f3f4f6;     /* Light gray background */
+  --bg-panel: #ffffff;    /* Pure white sidebar/panels */
+  --border: #e5e7eb;      /* Soft light-gray borders */
+  --text-main: #111827;   /* Near-black text for reading */
+  --text-muted: #6b7280;  /* Medium gray for secondary text */
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
