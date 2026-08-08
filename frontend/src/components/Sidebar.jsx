@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { uploadFile, deleteFile, deleteWorkspace } from '../api';
-// 💥 NEW: Imported Sun and Moon icons!
 import { BookOpen, Plus, LogOut, UploadCloud, Library, Trash2, FileText, Info, X, Sun, Moon } from 'lucide-react';
 
 export default function Sidebar({ userEmail, inventory, activeSubject, setActiveSubject, refreshInventory, onLogout, isMobile, onClose, theme, toggleTheme }) {
@@ -102,7 +101,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
 
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0.75rem 0', wordBreak: 'break-all' }}>{userEmail}</p>
         
-        {/* 💥 NEW: Theme Toggle and Logout Buttons side-by-side */}
+        {/* 💥 THE FIX: Theme Toggle and Logout Buttons are side-by-side! */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button onClick={toggleTheme} style={{ flex: 1, padding: '0.5rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
             {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />} 
