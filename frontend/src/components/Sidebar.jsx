@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { uploadFile, deleteFile, deleteWorkspace } from '../api';
-import { BookOpen, Plus, LogOut, UploadCloud, Library, Trash2, FileText, Info, X, Sun, Moon } from 'lucide-react';
+import { BookOpen, Plus, LogOut, UploadCloud, Library, Trash2, FileText, Info, X, Sun, Moon, Settings } from 'lucide-react';
 
-// Premium Curated Color Palette
 const PRESET_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#ec4899'];
 
 export default function Sidebar({ userEmail, inventory, activeSubject, setActiveSubject, refreshInventory, onLogout, isMobile, onClose, theme, toggleTheme, chatColor, onColorChange }) {
@@ -10,6 +9,9 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
   const [hiddenFiles, setHiddenFiles] = useState([]);
+  
+  // 💥 NEW: State to control the Settings Modal
+  const [showSettings, setShowSettings] = useState(false);
   
   const subjects = Object.keys(inventory || {});
   const activeFiles = activeSubject && inventory && inventory[activeSubject] 
@@ -101,35 +103,10 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
 
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 1rem 0', wordBreak: 'break-all' }}>{userEmail}</p>
         
-        {/* 💥 NEW: Premium Color Swatches! */}
-        <div style={{ marginBottom: '1rem' }}>
-          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem' }}>Chat Color</p>
-          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'space-between' }}>
-            {PRESET_COLORS.map(color => (
-              <button
-                key={color}
-                onClick={() => onColorChange(color)}
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  backgroundColor: color,
-                  border: chatColor === color ? '2px solid var(--text-main)' : '2px solid transparent',
-                  cursor: 'pointer',
-                  padding: 0,
-                  transition: 'transform 0.1s ease',
-                  transform: chatColor === color ? 'scale(1.15)' : 'scale(1)'
-                }}
-                title={`Change color`}
-              />
-            ))}
-          </div>
-        </div>
-
+        {/* 💥 REPLACED: Settings button instead of messy toggles */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={toggleTheme} style={{ flex: 1, padding: '0.5rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />} 
-            {theme === 'dark' ? 'Light' : 'Dark'}
+          <button onClick={() => setShowSettings(true)} style={{ flex: 1, padding: '0.5rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+            <Settings size={14} /> Settings
           </button>
           <button onClick={onLogout} style={{ flex: 1, padding: '0.5rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', border: '1px solid transparent' }}>
             <LogOut size={14} /> Log Out
@@ -229,6 +206,63 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
               {uploadStatus}
             </p>
           )}
+        </div>
+      )}
+
+      {/* 💥 NEW: The Settings Modal Overlay */}
+      {showSettings && (
+        <div 
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(3px)' }}
+          onClick={() => setShowSettings(false)}
+        >
+          <div 
+            style={{ width: '90%', maxWidth: '400px', backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
+            onClick={(e) => e.stopPropagation()} // Prevents clicking inside the modal from closing it
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Settings size={18} color="var(--primary)" /> Preferences
+              </h3>
+              <button onClick={() => setShowSettings(false)} style={{ background: 'transparent', padding: '0.25rem', color: 'var(--text-muted)' }}>
+                <X size={20}/>
+              </button>
+            </div>
+
+            {/* Theme Toggle */}
+            <div style={{ marginBottom: '2rem' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.75rem' }}>Appearance</p>
+              <button onClick={toggleTheme} style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', borderRadius: '8px' }}>
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />} 
+                Switch to {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </button>
+            </div>
+
+            {/* Color Picker */}
+            <div style={{ marginBottom: '1rem' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '1rem' }}>Chat Bubble Color</p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', padding: '0 0.5rem' }}>
+                {PRESET_COLORS.map(color => (
+                  <button
+                    key={color}
+                    onClick={() => onColorChange(color)}
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: color,
+                      border: chatColor === color ? '3px solid var(--text-main)' : '3px solid transparent',
+                      cursor: 'pointer',
+                      padding: 0,
+                      transition: 'all 0.2s ease',
+                      transform: chatColor === color ? 'scale(1.15)' : 'scale(1)',
+                      boxShadow: chatColor === color ? `0 0 12px ${color}80` : 'none'
+                    }}
+                    title={`Change color`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
