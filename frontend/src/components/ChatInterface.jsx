@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getChatHistory, streamVedaChat, generateToolStream, replaceChatHistory } from '../api';
-import { Send, ScrollText, FileQuestion, Pencil, Sparkles } from 'lucide-react';
+import { Send, ScrollText, FileQuestion, Pencil, Sparkles, Menu } from 'lucide-react';
 
 // Smooth Typewriter Component
 const TypewriterMessage = ({ content, isLast, loading, formatMessage }) => {
@@ -30,7 +30,7 @@ const TypewriterMessage = ({ content, isLast, loading, formatMessage }) => {
   );
 };
 
-export default function ChatInterface({ userEmail, activeSubject }) {
+export default function ChatInterface({ userEmail, activeSubject, isMobile, onOpenSidebar }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -76,7 +76,7 @@ export default function ChatInterface({ userEmail, activeSubject }) {
   };
 
   const handleSend = async (overrideText = null) => {
-    // 💥 Prevents empty queries from being sent to the backend
+    // Prevents empty queries from being sent to the backend
     const userQ = overrideText || input;
     if (!userQ.trim() || !activeSubject) return;
     
@@ -215,23 +215,47 @@ export default function ChatInterface({ userEmail, activeSubject }) {
   };
 
   if (!activeSubject) {
-    return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>Select or create a workspace in the sidebar to begin.</div>;
+    return (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-dark)' }}>
+        {isMobile && (
+          <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
+            <button onClick={onOpenSidebar} style={{ background: 'transparent', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Menu size={24} /> <span style={{ fontWeight: '600' }}>Menu</span>
+            </button>
+          </div>
+        )}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+          Select or create a workspace in the sidebar to begin.
+        </div>
+      </div>
+    );
   }
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-dark)' }}>
       
       {/* Header */}
-      <div style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)' }}>
-        <h2 style={{ fontSize: '1.1rem', fontWeight: '600' }}>{activeSubject}</h2>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button onClick={() => handleTool('quiz')} style={{ background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem' }}><FileQuestion size={16}/> Quiz Me</button>
-          <button onClick={() => handleTool('summary')} style={{ background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem' }}><ScrollText size={16}/> Study Guide</button>
+      <div style={{ padding: isMobile ? '1rem' : '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {isMobile && (
+            <button onClick={onOpenSidebar} style={{ background: 'transparent', color: 'white', padding: '0.25rem' }}>
+              <Menu size={24} />
+            </button>
+          )}
+          <h2 style={{ fontSize: '1.1rem', fontWeight: '600' }}>{activeSubject}</h2>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={() => handleTool('quiz')} style={{ background: 'rgba(255,255,255,0.05)', padding: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <FileQuestion size={16}/> {!isMobile && "Quiz Me"}
+          </button>
+          <button onClick={() => handleTool('summary')} style={{ background: 'rgba(255,255,255,0.05)', padding: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <ScrollText size={16}/> {!isMobile && "Study Guide"}
+          </button>
         </div>
       </div>
 
       {/* Chat History & Welcome Screen */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1rem' : '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         
         {messages.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', gap: '1.5rem', marginTop: '5vh' }}>
@@ -245,7 +269,7 @@ export default function ChatInterface({ userEmail, activeSubject }) {
             <p style={{ maxWidth: '550px', textAlign: 'center', lineHeight: '1.6', fontSize: '0.95rem' }}>
               Veda uses strictly locked local memory (Retrieval-Augmented Generation) to learn from the documents you upload. It will only provide answers and citations based on your trusted notes.
             </p>
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', width: '100%', maxWidth: '550px' }}>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', width: '100%', maxWidth: '550px', flexDirection: isMobile ? 'column' : 'row' }}>
               <div style={{ background: 'var(--bg-panel)', padding: '1.25rem', borderRadius: '12px', border: '1px solid var(--border)', flex: 1, textAlign: 'center' }}>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>Chat with <strong>{activeSubject}</strong> in the input below.</p>
               </div>
@@ -303,17 +327,17 @@ export default function ChatInterface({ userEmail, activeSubject }) {
       </div>
 
       {/* Input Area */}
-      <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ padding: isMobile ? '1rem' : '1.5rem 2rem', borderTop: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', maxWidth: '800px', margin: '0 auto' }}>
           <input 
             style={{ flex: 1, padding: '1rem 1.25rem', fontSize: '1rem', background: 'rgba(0,0,0,0.2)' }} 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder={activeQuiz ? "Type your answer to the quiz..." : `Ask Veda about ${activeSubject}...`}
+            placeholder={activeQuiz ? "Type your answer..." : `Ask Veda...`}
             disabled={loading}
           />
-          <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="btn-primary" style={{ padding: '0 1.25rem' }}>
+          <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="btn-primary" style={{ padding: isMobile ? '0 1rem' : '0 1.25rem' }}>
             <Send size={20} />
           </button>
         </div>

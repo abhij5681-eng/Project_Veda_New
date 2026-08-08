@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { uploadFile, deleteFile, deleteWorkspace } from '../api';
-import { BookOpen, Plus, LogOut, UploadCloud, Library, Trash2, FileText, Info } from 'lucide-react';
+import { BookOpen, Plus, LogOut, UploadCloud, Library, Trash2, FileText, Info, X } from 'lucide-react';
 
-export default function Sidebar({ userEmail, inventory, activeSubject, setActiveSubject, refreshInventory, onLogout }) {
+export default function Sidebar({ userEmail, inventory, activeSubject, setActiveSubject, refreshInventory, onLogout, isMobile, onClose }) {
   const [newSubject, setNewSubject] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
@@ -31,7 +31,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
       for (const file of files) {
         await uploadFile(userEmail, activeSubject, file);
         
-        // 💥 THE FIX: Un-hide the file if it was previously deleted in this session!
+        // Un-hide the file if it was previously deleted in this session
         setHiddenFiles(prev => prev.filter(f => f !== file.name));
       }
       
@@ -51,7 +51,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
   const handleDeleteFile = async (filename) => {
     if (window.confirm(`Are you sure you want to remove "${filename}" from Veda's memory?`)) {
       
-      // OPTIMISTIC UI: Instantly hide the file from the screen!
+      // OPTIMISTIC UI: Instantly hide the file from the screen
       setHiddenFiles(prev => [...prev, filename]);
       
       try {
@@ -86,9 +86,18 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
       
       {/* Profile & Info Area */}
       <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-        <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0 0 1rem 0', fontWeight: '600' }}>
-          <Library size={20} color="var(--primary)"/> Project Veda
-        </h3>
+        
+        {/* Mobile Header with Close Button */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, fontWeight: '600' }}>
+            <Library size={20} color="var(--primary)"/> Project Veda
+          </h3>
+          {isMobile && (
+            <button onClick={onClose} style={{ background: 'transparent', padding: '0.25rem', color: 'var(--text-muted)' }}>
+              <X size={20} />
+            </button>
+          )}
+        </div>
         
         {/* Who is Veda? Box */}
         <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border)' }}>
