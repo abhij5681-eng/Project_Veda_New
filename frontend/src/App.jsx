@@ -13,6 +13,7 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Listen for screen size changes
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
@@ -54,7 +55,7 @@ export default function App() {
   return (
     <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', position: 'relative' }}>
       
-      {/* Mobile Dark Overlay */}
+      {/* Mobile Dark Overlay (closes sidebar when clicked) */}
       {isMobile && sidebarOpen && (
         <div 
           onClick={() => setSidebarOpen(false)}
@@ -74,7 +75,10 @@ export default function App() {
           userEmail={userEmail}
           inventory={inventory}
           activeSubject={activeSubject}
-          setActiveSubject={(sub) => { setActiveSubject(sub); if(isMobile) setSidebarOpen(false); }}
+          setActiveSubject={(sub) => { 
+            setActiveSubject(sub); 
+            if(isMobile) setSidebarOpen(false); // Auto-close sidebar on mobile after selecting a subject!
+          }}
           refreshInventory={refreshInventory}
           onLogout={handleLogout}
           isMobile={isMobile}
