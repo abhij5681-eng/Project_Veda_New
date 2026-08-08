@@ -12,8 +12,9 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // 💥 NEW: Theme State! Defaults to dark, or whatever they saved last.
   const [theme, setTheme] = useState(localStorage.getItem('veda_theme') || 'dark');
+  // 💥 NEW: Chat Color State! Defaults to our sleek Blue.
+  const [chatColor, setChatColor] = useState(localStorage.getItem('veda_chat_color') || '#3b82f6');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -47,11 +48,16 @@ export default function App() {
     localStorage.removeItem('veda_user'); 
   };
 
-  // 💥 NEW: Toggle Function
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     localStorage.setItem('veda_theme', newTheme);
+  };
+
+  // 💥 NEW: Handle Color Change
+  const handleColorChange = (color) => {
+    setChatColor(color);
+    localStorage.setItem('veda_chat_color', color);
   };
 
   if (!userEmail) {
@@ -59,7 +65,6 @@ export default function App() {
   }
 
   return (
-    // 💥 NEW: Applies the light-mode class dynamically
     <div className={theme === 'light' ? 'light-mode' : ''} style={{ display: 'flex', height: '100dvh', width: '100vw', overflow: 'hidden', position: 'fixed', top: 0, left: 0, backgroundColor: 'var(--bg-dark)', color: 'var(--text-main)' }}>
       
       {isMobile && sidebarOpen && (
@@ -90,6 +95,8 @@ export default function App() {
           onClose={() => setSidebarOpen(false)}
           theme={theme}
           toggleTheme={toggleTheme}
+          chatColor={chatColor}             /* Passed Down */
+          onColorChange={handleColorChange} /* Passed Down */
         />
       </div>
 
@@ -99,6 +106,7 @@ export default function App() {
           activeSubject={activeSubject}
           isMobile={isMobile}
           onOpenSidebar={() => setSidebarOpen(true)}
+          chatColor={chatColor}             /* Passed Down */
         />
       </div>
     </div>

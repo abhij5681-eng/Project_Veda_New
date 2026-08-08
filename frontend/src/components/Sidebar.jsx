@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { uploadFile, deleteFile, deleteWorkspace } from '../api';
 import { BookOpen, Plus, LogOut, UploadCloud, Library, Trash2, FileText, Info, X, Sun, Moon } from 'lucide-react';
 
-export default function Sidebar({ userEmail, inventory, activeSubject, setActiveSubject, refreshInventory, onLogout, isMobile, onClose, theme, toggleTheme }) {
+// Premium Curated Color Palette
+const PRESET_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#ec4899'];
+
+export default function Sidebar({ userEmail, inventory, activeSubject, setActiveSubject, refreshInventory, onLogout, isMobile, onClose, theme, toggleTheme, chatColor, onColorChange }) {
   const [newSubject, setNewSubject] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
@@ -59,12 +62,10 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
 
   const handleDeleteWorkspace = async (subjectToDelete, e) => {
     e.stopPropagation(); 
-    if (window.confirm(`Are you sure you want to delete the entire "${subjectToDelete}" workspace, including its chat history and files?`)) {
+    if (window.confirm(`Are you sure you want to delete the entire "${subjectToDelete}" workspace?`)) {
       try {
         await deleteWorkspace(userEmail, subjectToDelete);
-        if (activeSubject === subjectToDelete) {
-          setActiveSubject(null); 
-        }
+        if (activeSubject === subjectToDelete) setActiveSubject(null); 
         await new Promise((resolve) => setTimeout(resolve, 300));
         await refreshInventory();
       } catch (err) {
@@ -76,7 +77,6 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
   return (
     <div style={{ width: '280px', backgroundColor: 'var(--bg-panel)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100vh' }}>
       
-      {/* Profile & Info Area */}
       <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -95,13 +95,37 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
             <Info size={14} color="var(--primary)"/> Who is Veda?
           </p>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
-            Your personal, context-aware AI tutor. Veda learns strictly from your uploaded notes and provides exact citations for every answer.
+            Your personal, context-aware AI tutor. Veda learns strictly from your uploaded notes and provides exact citations.
           </p>
         </div>
 
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 0.75rem 0', wordBreak: 'break-all' }}>{userEmail}</p>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 1rem 0', wordBreak: 'break-all' }}>{userEmail}</p>
         
-        {/* 💥 THE FIX: Theme Toggle and Logout Buttons are side-by-side! */}
+        {/* 💥 NEW: Premium Color Swatches! */}
+        <div style={{ marginBottom: '1rem' }}>
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem' }}>Chat Color</p>
+          <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'space-between' }}>
+            {PRESET_COLORS.map(color => (
+              <button
+                key={color}
+                onClick={() => onColorChange(color)}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  backgroundColor: color,
+                  border: chatColor === color ? '2px solid var(--text-main)' : '2px solid transparent',
+                  cursor: 'pointer',
+                  padding: 0,
+                  transition: 'transform 0.1s ease',
+                  transform: chatColor === color ? 'scale(1.15)' : 'scale(1)'
+                }}
+                title={`Change color`}
+              />
+            ))}
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button onClick={toggleTheme} style={{ flex: 1, padding: '0.5rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
             {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />} 
@@ -113,7 +137,6 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
         </div>
       </div>
 
-      {/* Workspace List */}
       <div style={{ padding: '1.5rem 1rem', flex: 1, overflowY: 'auto' }}>
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
           <input 
@@ -167,7 +190,6 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
         )}
       </div>
 
-      {/* Manage Files & Upload Area */}
       {activeSubject && (
         <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', background: 'var(--bg-dark)' }}>
           

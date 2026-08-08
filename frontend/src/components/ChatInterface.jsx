@@ -26,7 +26,8 @@ const TypewriterMessage = ({ content, isLast, loading, formatMessage }) => {
   );
 };
 
-export default function ChatInterface({ userEmail, activeSubject, isMobile, onOpenSidebar }) {
+// 💥 NEW: We are accepting chatColor as a prop here!
+export default function ChatInterface({ userEmail, activeSubject, isMobile, onOpenSidebar, chatColor }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -202,7 +203,8 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
 
   if (!activeSubject) {
     return (
-      <div style={{ "--primary": "#3b82f6", flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-dark)' }}>
+      // 💥 NEW: Overrides the CSS variable dynamically with user's saved color
+      <div style={{ "--primary": chatColor, flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-dark)' }}>
         {isMobile && (
           <div style={{ flexShrink: 0, padding: '1rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
             <button onClick={onOpenSidebar} style={{ background: 'transparent', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -218,7 +220,8 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
   }
 
   return (
-    <div style={{ "--primary": "#3b82f6", flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-dark)' }}>
+    // 💥 NEW: Overrides the CSS variable dynamically with user's saved color
+    <div style={{ "--primary": chatColor, flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-dark)' }}>
       
       <div style={{ flexShrink: 0, padding: isMobile ? '1rem' : '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -264,12 +267,14 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                     <button onClick={() => setEditingIndex(null)} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-main)', padding: '0.4rem 0.8rem' }}>Cancel</button>
-                    <button onClick={() => handleSaveEdit(i)} className="btn-primary" style={{ padding: '0.4rem 0.8rem', backgroundColor: '#3b82f6', borderColor: '#3b82f6', color: '#ffffff' }}>Save & Submit</button>
+                    {/* 💥 NEW: Save Button uses the dynamic user color */}
+                    <button onClick={() => handleSaveEdit(i)} className="btn-primary" style={{ padding: '0.4rem 0.8rem', backgroundColor: chatColor, borderColor: chatColor, color: '#ffffff' }}>Save & Submit</button>
                   </div>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem', maxWidth: '80%' }}>
-                  <div className="chat-bubble chat-user" style={{ backgroundColor: '#3b82f6', color: '#ffffff' }}>
+                  {/* 💥 NEW: Chat Bubbles use the dynamic user color */}
+                  <div className="chat-bubble chat-user" style={{ backgroundColor: chatColor, color: '#ffffff' }}>
                     {formatMessage(m.content)}
                   </div>
                   <button 
@@ -305,7 +310,8 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
             placeholder={activeQuiz ? "Type your answer..." : `Ask Veda...`}
             disabled={loading}
           />
-          <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="btn-primary" style={{ padding: isMobile ? '0 1rem' : '0 1.25rem', backgroundColor: '#3b82f6', borderColor: '#3b82f6', color: '#ffffff' }}>
+          {/* 💥 NEW: Send Button uses the dynamic user color */}
+          <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="btn-primary" style={{ padding: isMobile ? '0 1rem' : '0 1.25rem', backgroundColor: chatColor, borderColor: chatColor, color: '#ffffff' }}>
             <Send size={20} />
           </button>
         </div>
