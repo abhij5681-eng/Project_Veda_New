@@ -1,15 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Pure Neutral Charcoal - Zero green or blue tints in the background */
-  --bg-dark: #2b2b2b;     /* Medium-dark charcoal (Not pitch black!) */
-  --bg-panel: #363636;    /* Slightly lighter charcoal for the sidebar */
-  --border: #4a4a4a;      /* Clean, flat gray border */
-  --text-main: #f5f5f5;   /* Crisp white for perfect readability */
-  --text-muted: #a3a3a3;  /* Professional, soft gray */
+  /* The Original Deep Dark Backgrounds */
+  --bg-dark: #0b0f19;     /* Deep, rich near-black */
+  --bg-panel: #111827;    /* Classic dark sidebar/panel */
+  --border: #1f2937;      /* Clean, dark dividing lines */
+  --text-main: #f9fafb;   /* Crisp, pure white text */
+  --text-muted: #9ca3af;  /* Readable soft gray */
   
-  /* Accents */
-  --primary: #3b82f6;     /* Classic, professional UI Blue (No purple) */
+  /* The New Green Accent */
+  --primary: #10b981;     /* Vibrant Emerald Green (No more purple!) */
   --danger: #ef4444;
   --success: #10b981;
 }
