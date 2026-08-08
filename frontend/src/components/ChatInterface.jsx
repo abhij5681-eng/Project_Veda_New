@@ -218,7 +218,6 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
   }
 
   return (
-    // 💥 FIX: minHeight: 0 stops the chat from expanding beyond the screen height
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-dark)' }}>
       
       <div style={{ flexShrink: 0, padding: isMobile ? '1rem' : '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)' }}>
@@ -240,7 +239,6 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
         </div>
       </div>
 
-      {/* 💥 FIX: minHeight: 0 forces the scrolling to happen INSIDE this box only */}
       <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: isMobile ? '1rem' : '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {messages.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', gap: '1.5rem', marginTop: '5vh' }}>
@@ -262,16 +260,18 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
                   <textarea 
                     value={editValue} 
                     onChange={(e) => setEditValue(e.target.value)}
-                    style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--primary)', color: 'white', padding: '0.75rem', borderRadius: '8px', minHeight: '80px', resize: 'vertical', marginBottom: '0.5rem', outline: 'none' }}
+                    style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', color: 'white', padding: '0.75rem', borderRadius: '8px', minHeight: '80px', resize: 'vertical', marginBottom: '0.5rem', outline: 'none' }}
                   />
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                     <button onClick={() => setEditingIndex(null)} style={{ background: 'transparent', border: '1px solid var(--border)', padding: '0.4rem 0.8rem' }}>Cancel</button>
-                    <button onClick={() => handleSaveEdit(i)} className="btn-primary" style={{ padding: '0.4rem 0.8rem' }}>Save & Submit</button>
+                    {/* 💥 FIX: Forced Blue on Save Edit Button */}
+                    <button onClick={() => handleSaveEdit(i)} className="btn-primary" style={{ padding: '0.4rem 0.8rem', backgroundColor: '#3b82f6', borderColor: '#3b82f6', color: '#ffffff' }}>Save & Submit</button>
                   </div>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem', maxWidth: '80%' }}>
-                  <div className="chat-bubble chat-user">
+                  {/* 💥 FIX: Forced Blue on User Chat Bubbles */}
+                  <div className="chat-bubble chat-user" style={{ backgroundColor: '#3b82f6', color: '#ffffff' }}>
                     {formatMessage(m.content)}
                   </div>
                   <button 
@@ -300,14 +300,15 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
       <div style={{ flexShrink: 0, padding: isMobile ? '1rem' : '1.5rem 2rem', borderTop: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
         <div style={{ display: 'flex', gap: '0.5rem', maxWidth: '800px', margin: '0 auto' }}>
           <input 
-            style={{ flex: 1, padding: '1rem 1.25rem', fontSize: '1rem', background: 'rgba(0,0,0,0.2)' }} 
+            style={{ flex: 1, padding: '1rem 1.25rem', fontSize: '1rem', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid var(--border)', borderRadius: '8px' }} 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder={activeQuiz ? "Type your answer..." : `Ask Veda...`}
             disabled={loading}
           />
-          <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="btn-primary" style={{ padding: isMobile ? '0 1rem' : '0 1.25rem' }}>
+          {/* 💥 FIX: Forced Blue on the Main Send Button */}
+          <button onClick={() => handleSend()} disabled={loading || !input.trim()} className="btn-primary" style={{ padding: isMobile ? '0 1rem' : '0 1.25rem', backgroundColor: '#3b82f6', borderColor: '#3b82f6', color: '#ffffff' }}>
             <Send size={20} />
           </button>
         </div>
