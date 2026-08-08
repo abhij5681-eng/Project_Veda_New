@@ -1,13 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-dark: #0f1117;
-  --bg-panel: #1e1e2e;
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --border: #334155;
+  /* Soft Slate Theme - Easier on the eyes, not too dark, not too light */
+  --bg-dark: #1e293b;     /* Main background: A soft, deep slate gray */
+  --bg-panel: #334155;    /* Sidebar & Headers: Slightly lighter slate to pop out */
+  --border: #475569;      /* Borders: Smooth, subtle gray */
+  --text-main: #f8fafc;   /* Main text: Crisp off-white for perfect readability */
+  --text-muted: #cbd5e1;  /* Secondary text: Soft, readable silver */
+  
+  /* Accents (Keeping your original colors) */
+  --primary: #6366f1;     
   --danger: #ef4444;
   --success: #10b981;
 }
