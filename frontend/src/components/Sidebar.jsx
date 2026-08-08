@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
 import { uploadFile, deleteFile, deleteWorkspace } from '../api';
-import { BookOpen, Plus, LogOut, UploadCloud, Library, Trash2, FileText, Info, X, Sun, Moon, Settings } from 'lucide-react';
+import { BookOpen, Plus, LogOut, UploadCloud, Library, Trash2, FileText, Info, X, Settings } from 'lucide-react';
 
-const PRESET_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#ec4899'];
-
-export default function Sidebar({ userEmail, inventory, activeSubject, setActiveSubject, refreshInventory, onLogout, isMobile, onClose, theme, toggleTheme, chatColor, onColorChange }) {
+export default function Sidebar({ userEmail, inventory, activeSubject, setActiveSubject, refreshInventory, onLogout, isMobile, onClose, onOpenSettings, workspaceColor }) {
   const [newSubject, setNewSubject] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
   const [hiddenFiles, setHiddenFiles] = useState([]);
-  
-  // 💥 NEW: State to control the Settings Modal
-  const [showSettings, setShowSettings] = useState(false);
   
   const subjects = Object.keys(inventory || {});
   const activeFiles = activeSubject && inventory && inventory[activeSubject] 
@@ -83,7 +78,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, fontWeight: '600' }}>
-            <Library size={20} color="var(--primary)"/> Project Veda
+            <Library size={20} color="var(--text-main)"/> Project Veda
           </h3>
           {isMobile && (
             <button onClick={onClose} style={{ background: 'transparent', padding: '0.25rem', color: 'var(--text-muted)' }}>
@@ -94,7 +89,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
         
         <div style={{ background: 'var(--bg-dark)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid var(--border)' }}>
           <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-main)', margin: '0 0 0.4rem 0' }}>
-            <Info size={14} color="var(--primary)"/> Who is Veda?
+            <Info size={14} /> Who is Veda?
           </p>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4', margin: 0 }}>
             Your personal, context-aware AI tutor. Veda learns strictly from your uploaded notes and provides exact citations.
@@ -103,9 +98,9 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
 
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 1rem 0', wordBreak: 'break-all' }}>{userEmail}</p>
         
-        {/* 💥 REPLACED: Settings button instead of messy toggles */}
+        {/* 💥 NEW: Clean Settings & Logout routing */}
         <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={() => setShowSettings(true)} style={{ flex: 1, padding: '0.5rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+          <button onClick={onOpenSettings} style={{ flex: 1, padding: '0.5rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
             <Settings size={14} /> Settings
           </button>
           <button onClick={onLogout} style={{ flex: 1, padding: '0.5rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', border: '1px solid transparent' }}>
@@ -124,7 +119,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
             onKeyDown={(e) => e.key === 'Enter' && handleCreateWorkspace()} 
             style={{ flex: 1, padding: '0.5rem', fontSize: '0.85rem', background: 'var(--bg-dark)', color: 'var(--text-main)', border: '1px solid var(--border)' }} 
           />
-          <button onClick={handleCreateWorkspace} className="btn-primary" style={{ padding: '0.5rem' }}>
+          <button onClick={handleCreateWorkspace} className="btn-primary" style={{ padding: '0.5rem', backgroundColor: workspaceColor, borderColor: workspaceColor }}>
             <Plus size={18}/>
           </button>
         </div>
@@ -144,7 +139,8 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   padding: '0.6rem 0.75rem',
-                  backgroundColor: activeSubject === sub ? 'var(--primary)' : 'transparent',
+                  /* 💥 NEW: Dynamically applies chosen Workspace Color! */
+                  backgroundColor: activeSubject === sub ? workspaceColor : 'transparent',
                   color: activeSubject === sub ? 'white' : 'var(--text-main)',
                   borderRadius: '8px',
                   cursor: 'pointer'
@@ -178,7 +174,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
             {activeFiles.map(file => (
               <div key={file} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
-                  <FileText size={14} color="var(--primary)" />
+                  <FileText size={14} color={workspaceColor} />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }} title={file}>{file}</span>
                 </div>
                 <button onClick={() => handleDeleteFile(file)} style={{ padding: '0.25rem', background: 'transparent', color: 'var(--danger)', height: 'auto' }}>
@@ -206,63 +202,6 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
               {uploadStatus}
             </p>
           )}
-        </div>
-      )}
-
-      {/* 💥 NEW: The Settings Modal Overlay */}
-      {showSettings && (
-        <div 
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(3px)' }}
-          onClick={() => setShowSettings(false)}
-        >
-          <div 
-            style={{ width: '90%', maxWidth: '400px', backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}
-            onClick={(e) => e.stopPropagation()} // Prevents clicking inside the modal from closing it
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Settings size={18} color="var(--primary)" /> Preferences
-              </h3>
-              <button onClick={() => setShowSettings(false)} style={{ background: 'transparent', padding: '0.25rem', color: 'var(--text-muted)' }}>
-                <X size={20}/>
-              </button>
-            </div>
-
-            {/* Theme Toggle */}
-            <div style={{ marginBottom: '2rem' }}>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.75rem' }}>Appearance</p>
-              <button onClick={toggleTheme} style={{ width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', borderRadius: '8px' }}>
-                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />} 
-                Switch to {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-              </button>
-            </div>
-
-            {/* Color Picker */}
-            <div style={{ marginBottom: '1rem' }}>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '1rem' }}>Chat Bubble Color</p>
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', padding: '0 0.5rem' }}>
-                {PRESET_COLORS.map(color => (
-                  <button
-                    key={color}
-                    onClick={() => onColorChange(color)}
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      backgroundColor: color,
-                      border: chatColor === color ? '3px solid var(--text-main)' : '3px solid transparent',
-                      cursor: 'pointer',
-                      padding: 0,
-                      transition: 'all 0.2s ease',
-                      transform: chatColor === color ? 'scale(1.15)' : 'scale(1)',
-                      boxShadow: chatColor === color ? `0 0 12px ${color}80` : 'none'
-                    }}
-                    title={`Change color`}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>

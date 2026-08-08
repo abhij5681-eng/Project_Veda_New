@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Auth from './components/Auth';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
+import Settings from './components/Settings';
 import { getInventory } from './api';
 
 export default function App() {
@@ -12,9 +13,13 @@ export default function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
+  // 💥 NEW: View Router State
+  const [currentView, setCurrentView] = useState('chat'); // 'chat' | 'settings'
+  
+  // 💥 NEW: Separated Color States
   const [theme, setTheme] = useState(localStorage.getItem('veda_theme') || 'dark');
-  // 💥 NEW: Chat Color State! Defaults to our sleek Blue.
   const [chatColor, setChatColor] = useState(localStorage.getItem('veda_chat_color') || '#3b82f6');
+  const [workspaceColor, setWorkspaceColor] = useState(localStorage.getItem('veda_workspace_color') || '#10b981');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -54,10 +59,14 @@ export default function App() {
     localStorage.setItem('veda_theme', newTheme);
   };
 
-  // 💥 NEW: Handle Color Change
-  const handleColorChange = (color) => {
+  const handleChatColorChange = (color) => {
     setChatColor(color);
     localStorage.setItem('veda_chat_color', color);
+  };
+
+  const handleWorkspaceColorChange = (color) => {
+    setWorkspaceColor(color);
+    localStorage.setItem('veda_workspace_color', color);
   };
 
   if (!userEmail) {
@@ -87,27 +96,37 @@ export default function App() {
           activeSubject={activeSubject}
           setActiveSubject={(sub) => { 
             setActiveSubject(sub); 
+            setCurrentView('chat'); // Auto-switch to chat when picking a workspace
             if(isMobile) setSidebarOpen(false); 
           }}
           refreshInventory={refreshInventory}
           onLogout={handleLogout}
           isMobile={isMobile}
           onClose={() => setSidebarOpen(false)}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          chatColor={chatColor}             /* Passed Down */
-          onColorChange={handleColorChange} /* Passed Down */
+          onOpenSettings={() => { setCurrentView('settings'); if(isMobile) setSidebarOpen(false); }}
+          workspaceColor={workspaceColor} // 💥 Passed Down!
         />
       </div>
 
+      {/* 💥 NEW: Router renders Settings OR Chat */}
       <div style={{ flex: 1, height: '100%', minHeight: 0, width: isMobile ? '100%' : 'calc(100% - 280px)', display: 'flex', flexDirection: 'column' }}>
-        <ChatInterface 
-          userEmail={userEmail}
-          activeSubject={activeSubject}
-          isMobile={isMobile}
-          onOpenSidebar={() => setSidebarOpen(true)}
-          chatColor={chatColor}             /* Passed Down */
-        />
+        {currentView === 'settings' ? (
+          <Settings 
+            theme={theme} toggleTheme={toggleTheme}
+            chatColor={chatColor} onChatColorChange={handleChatColorChange}
+            workspaceColor={workspaceColor} onWorkspaceColorChange={handleWorkspaceColorChange}
+            onBack={() => setCurrentView('chat')}
+            isMobile={isMobile}
+          />
+        ) : (
+          <ChatInterface 
+            userEmail={userEmail}
+            activeSubject={activeSubject}
+            isMobile={isMobile}
+            onOpenSidebar={() => setSidebarOpen(true)}
+            chatColor={chatColor}
+          />
+        )}
       </div>
     </div>
   );
