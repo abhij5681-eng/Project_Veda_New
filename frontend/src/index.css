@@ -1,15 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* The Original Deep Dark Backgrounds */
-  --bg-dark: #0b0f19;     /* Deep, rich near-black */
-  --bg-panel: #111827;    /* Classic dark sidebar/panel */
-  --border: #1f2937;      /* Clean, dark dividing lines */
-  --text-main: #f9fafb;   /* Crisp, pure white text */
-  --text-muted: #9ca3af;  /* Readable soft gray */
+  /* True Black Theme - Zero blue undertones! */
+  --bg-dark: #000000;     /* Pure pitch black background */
+  --bg-panel: #121212;    /* Very dark, purely neutral gray for the sidebar */
+  --border: #27272a;      /* Clean, neutral gray border */
+  --text-main: #ffffff;   /* Pure white text for maximum contrast */
+  --text-muted: #a1a1aa;  /* Neutral soft gray */
   
-  /* The New Green Accent */
-  --primary: #10b981;     /* Vibrant Emerald Green (No more purple!) */
+  /* The Emerald Accent */
+  --primary: #10b981;     /* Vibrant Emerald Green */
   --danger: #ef4444;
   --success: #10b981;
 }
