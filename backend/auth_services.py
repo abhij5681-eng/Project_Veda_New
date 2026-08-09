@@ -1,3 +1,4 @@
+import requests
 import os
 import string
 import secrets
@@ -16,29 +17,37 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def generate_otp(length=6) -> str:
     return ''.join(secrets.choice(string.digits) for _ in range(length))
 
+
 def send_otp_email(recipient_email: str, otp_code: str) -> bool:
     sender_email = os.environ.get("EMAIL_ADDRESS")
-    app_password = os.environ.get("EMAIL_APP_PASSWORD")
+    api_key = os.environ.get("BREVO_API_KEY")
     
-    if not sender_email or not app_password:
+    if not sender_email or not api_key:
         print("❌ Email credentials missing from environment.")
         return False 
     
-    msg = MIMEMultipart()
-    msg['From'] = f"Project Veda <{sender_email}>"
-    msg['To'] = recipient_email
-    msg['Subject'] = "Your Project Veda Verification Code"
-    
-    body = f"Welcome to Project Veda!\n\nYour 6-digit secure verification code is: {otp_code}\n\nThis code is valid for 10 minutes."
-    msg.attach(MIMEText(body, 'plain'))
+    # Send via HTTPS to bypass Render's SMTP block
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+    payload = {
+        "sender": {"name": "Project Veda", "email": sender_email},
+        "to": [{"email": recipient_email}],
+        "subject": "Your Project Veda Verification Code",
+        "textContent": f"Welcome to Project Veda!\n\nYour 6-digit secure verification code is: {otp_code}\n\nThis code is valid for 10 minutes."
+    }
     
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(sender_email, app_password)
-        server.send_message(msg)
-        server.quit()
-        return True
+        response = requests.post(url, headers=headers, json=payload)
+        # Brevo returns 201 Created on success
+        if response.status_code in [200, 201, 202]:
+            return True
+        else:
+            print(f"Brevo API Error: {response.text}")
+            return False
     except Exception as e:
         print(f"Email delivery failed: {e}")
         return False
