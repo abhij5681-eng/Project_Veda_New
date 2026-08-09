@@ -94,7 +94,8 @@ def request_otp(req: SignupReq):
     otp = generate_otp()
     expires = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
     
-    supabase.table("otp_requests").insert({
+    
+    supabase.table("otp_requests").upsert({
         "email": req.email, 
         "otp_code": otp,
         "expires_at": expires
