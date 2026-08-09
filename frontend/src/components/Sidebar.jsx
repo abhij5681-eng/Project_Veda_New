@@ -23,7 +23,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
     }
   };
 
-  const processFiles = async (filesArray) => {
+const processFiles = async (filesArray) => {
     if (filesArray.length === 0 || !activeSubject) return;
     
     setUploading(true);
@@ -38,7 +38,12 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
       await refreshInventory();
       setUploadStatus('✨ All texts mastered!');
     } catch (err) { 
-      setUploadStatus('❌ Failed to upload some files.'); 
+      // 💥 NEW: Conditional check for the polite PDF message
+      if (err.message && err.message.includes("Veda only supports PDF")) {
+        setUploadStatus(`❌ ${err.message}`);
+      } else {
+        setUploadStatus('❌ Failed to upload some files.'); 
+      }
     } finally { 
       setUploading(false); 
       setTimeout(() => setUploadStatus(''), 3000);
@@ -73,6 +78,10 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
       setHiddenFiles(prev => [...prev, filename]);
       try {
         await deleteFile(userEmail, activeSubject, filename);
+        
+        // Give the backend a tiny moment to delete the file from storage
+        await new Promise((resolve) => setTimeout(resolve, 500)); 
+        
         await refreshInventory();
       } catch (err) {
         alert("Failed to delete the file.");
@@ -229,7 +238,7 @@ export default function Sidebar({ userEmail, inventory, activeSubject, setActive
             
             <input 
               type="file" 
-              accept=".pdf,.png,.jpg,.jpeg" 
+              accept=".pdf" 
               multiple 
               onChange={handleFileUpload} 
               disabled={uploading} 

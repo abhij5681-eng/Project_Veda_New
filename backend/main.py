@@ -28,14 +28,12 @@ from ai_services import ask_veda_stream, generate_with_failover_stream
 app = FastAPI(title="Project Veda API")
 
 # --- PRODUCTION CORS SETUP ---
-# --- PRODUCTION CORS SETUP ---
 origins = [
     "http://localhost:5173",       
     "http://127.0.0.1:5173",
-    "https://project-veda-taupe.vercel.app",  # 👈 Hardcoded here so it never misses
+    "https://project-veda-taupe.vercel.app",  
 ]
 
-# Add the production frontend URL if it exists in the environment variables
 frontend_url = os.getenv("FRONTEND_URL")
 if frontend_url and frontend_url not in origins:
     origins.append(frontend_url)
@@ -47,6 +45,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 # Request Models
 class LoginReq(BaseModel):
     email: str
@@ -93,11 +92,8 @@ def request_otp(req: SignupReq):
         raise HTTPException(status_code=400, detail="Account already exists")
     
     otp = generate_otp()
-    
-    # Calculate an expiration time (10 minutes from now)
     expires = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
     
-    # Add expires_at to the database insert
     supabase.table("otp_requests").insert({
         "email": req.email, 
         "otp_code": otp,
@@ -131,23 +127,21 @@ def remove_workspace(subject: str, user_email: str):
 
 @app.post("/api/upload")
 async def upload_file(
-    file: UploadFile = File(...),
+    user_email: str = Form(...),
     subject: str = Form(...),
-    user_email: str = Form(...)
+    file: UploadFile = File(...)
 ):
+    # SILENT FILTER: Ignore non-PDF files without throwing a disruptive error to UI
+    if not file.filename.lower().endswith(".pdf"):
+        return {"message": f"Silently ignored non-PDF: {file.filename}", "status": "ignored"}
+
     try:
         contents = await file.read()
         
-        # 1. Extract text chunks based on file type
-        if file.filename.endswith('.pdf'):
-            chunks = process_pdf(contents)
-        else:
-            chunks = process_raw_text(contents)
+        chunks = process_pdf(contents)
             
-        # 2. Upload the actual file to Supabase Storage
         upload_to_supabase_storage(user_email, subject, file.filename, contents)
         
-        # 3. Generate embeddings and save them to the Supabase database
         supabase = get_supabase()
         for chunk in chunks:
             embedding = get_embedding(chunk)
@@ -166,9 +160,27 @@ async def upload_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/file")
-def remove_file(filename: str, subject: str, user_email: str):
-    delete_file(filename, subject, user_email)
-    return {"status": "file deleted"}
+async def delete_document(
+    filename: str, 
+    subject: str, 
+    user_email: str
+):
+    try:
+        supabase = get_supabase() # 👈 FIXED: Initialized supabase client here
+        
+        file_path = f"{user_email}/{subject}/{filename}"
+        
+        # Physically delete the file from the Supabase storage bucket
+        supabase.storage.from_("veda_pdfs").remove([file_path])
+        
+        # Call your helper to wipe file memory/embeddings
+        delete_file(user_email, subject, filename)
+        
+        return {"message": f"Successfully deleted {filename} from storage and memory"}
+    
+    except Exception as e:
+        print(f"Delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- CHAT & TEACHER TOOLS ENDPOINTS ---
 @app.get("/api/chat/history")

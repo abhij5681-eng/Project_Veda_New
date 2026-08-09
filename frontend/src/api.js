@@ -19,11 +19,23 @@ export async function loginUser(email, password) {
 }
 
 export async function getInventory(userEmail) {
-  const res = await fetch(`${API_BASE}/inventory/${userEmail}`);
+  const res = await fetch(`${API_BASE}/inventory/${userEmail}`, {
+    // Add these headers to bypass browser caching completely
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
   return res.json();
 }
 
 export async function uploadFile(userEmail, subject, file) {
+  // Check if the file is a PDF right on the frontend
+  if (!file.name.toLowerCase().endsWith('.pdf')) {
+    throw new Error("Currently, Veda only supports PDF files. Please upload a PDF document!");
+  }
+
   const formData = new FormData();
   formData.append("user_email", userEmail);
   formData.append("subject", subject);
@@ -33,6 +45,18 @@ export async function uploadFile(userEmail, subject, file) {
     method: "POST",
     body: formData,
   });
+
+  if (!res.ok) {
+    let errorMessage = "Failed to upload file";
+    try {
+      const errorData = await res.json();
+      errorMessage = errorData.detail || errorData.message || errorMessage;
+    } catch (e) {
+      // Fallback if response is not JSON
+    }
+    throw new Error(errorMessage);
+  }
+
   return res.json();
 }
 
