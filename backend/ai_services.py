@@ -16,9 +16,12 @@ def generate_with_failover_stream(prompt):
         if chunk.text:
             yield chunk.text
 
-# 👇 Added language="English" parameter here
 def ask_veda_stream(user_email, question, subject_name, chat_history, language="English"):
     """The main chat function using Supabase pgvector for memory retrieval."""
+    
+    # 👇 ADDED A LOGGING STATEMENT! This will show up in your Render Logs!
+    print(f"🚀 VEDA TRIGGERED! Requested Language: {language}")
+    
     supabase = get_supabase()
 
     # Call the local model to convert the question into a vector
@@ -35,12 +38,10 @@ def ask_veda_stream(user_email, question, subject_name, chat_history, language="
         }
     ).execute()
     
-    # Check if we found documents
     if not results.data:
         yield f"I don't have any notes on '{subject_name}' in your personal records to answer this yet."
         return
         
-    # Inject the actual file names directly into the context text
     context_parts = []
     for row in results.data:
         doc_text = row['content']
@@ -51,27 +52,26 @@ def ask_veda_stream(user_email, question, subject_name, chat_history, language="
     
     history_text = ""
     if chat_history:
-        # Only pass the last 4 messages to keep context focused and save tokens
         for msg in chat_history[-4:]:
             role = "Student" if msg["role"] == "user" else "Veda"
             history_text += f"{role}: {msg['content']}\n"
             
+    # 👇 MASSIVELY UPDATED PROMPT TO PREVENT THE ENGLISH TEACHER HALLUCINATION
     prompt = f"""
-    You are Veda, an experienced, warm, and dedicated human-like teacher holding a class with your student. 
-    Speak naturally, encourage curiosity, use conversational phrasing, and show genuine enthusiasm for teaching. Never refer to yourself as an AI, a computer program, a model, or Gemini. 
+    You are Veda, an experienced, warm, and dedicated human-like teacher.
     
-    CRITICAL: You MUST communicate with the student entirely in {language}.
+    🚨 STRICT MULTILINGUAL DIRECTIVE 🚨
+    You MUST speak, think, and respond completely in {language}. 
+    Under NO circumstances are you allowed to tell the student to "stick to English." 
+    Do NOT act like an English teacher. If the requested language is {language}, you are a native {language} teacher.
+    Even though the Textbook Context below is written in English, you MUST translate your answers and explanations into {language}.
 
-    You must adhere strictly to these two behaviors:
-    
     BEHAVIOR 1: CONVERSATIONAL & MENTORSHIP
-    If the student is greeting you, asking how you are, or chatting casually, respond like a kind, supportive teacher checking in on their progress. Do not include citations for these messages.
+    If the student is greeting you, asking how you are, or chatting casually, respond like a kind, supportive teacher entirely in {language}. Do not include citations for these messages.
 
     BEHAVIOR 2: ACADEMIC INSTRUCTION & QUIZ EVALUATION
-    For factual questions or when grading quiz answers:
-    - Answer using ONLY the provided textbook context below. 
-    - If evaluating a quiz answer: if they are correct, compliment them warmly. If they are incorrect, politely explain the right answer and the underlying reason with patience and clarity.
-    - If a factual question cannot be answered from the notes, kindly say: "I couldn't find that in your uploaded notes, but let me know if you'd like me to look at another topic!"
+    Answer using ONLY the provided textbook context below. Translate the concepts into {language} so the student can understand them natively.
+    If a factual question cannot be answered from the notes, politely state in {language} that you couldn't find it.
 
     CITATION INSTRUCTION (FOR BEHAVIOR 2 ONLY):
     If you used the textbook context to answer an academic question, you MUST list the specific source file(s) you actually used at the very end of your response. 
@@ -86,7 +86,6 @@ def ask_veda_stream(user_email, question, subject_name, chat_history, language="
     Student's Message: {question}
     """
 
-    # Stream the final chat response back to the frontend
     try:
         response = client.models.generate_content_stream(
             model='gemini-3.5-flash-lite',
