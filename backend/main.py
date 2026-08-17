@@ -27,10 +27,8 @@ from auth_services import hash_password, verify_password, generate_otp, send_otp
 from ai_services import ask_veda_stream, generate_with_failover_stream
 from quiz_services import router as quiz_router
 
-# --- APP INITIALIZATION ---
 app = FastAPI(title="Project Veda API")
 
-# --- PRODUCTION CORS SETUP ---
 origins = [
     "http://localhost:5173",       
     "http://127.0.0.1:5173",
@@ -49,10 +47,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- INCLUDE ROUTERS ---
 app.include_router(quiz_router)
 
-# --- REQUEST MODELS ---
+# --- REQUEST MODELS (Notice the language fields!) ---
 class LoginReq(BaseModel):
     email: str
     password: str
@@ -70,13 +67,13 @@ class ChatReq(BaseModel):
     user_email: str
     subject: str
     question: str
-    language: str = "English"  # 👈 Added Language
+    language: str = "English"  # 👈 CRITICAL FIX
 
 class ToolReq(BaseModel):
     user_email: str
     subject: str
-    tool_type: str  # "quiz" or "summary"
-    language: str = "English"  # 👈 Added Language
+    tool_type: str  
+    language: str = "English"  # 👈 CRITICAL FIX
 
 class UpdateHistoryReq(BaseModel):
     user_email: str
@@ -86,7 +83,7 @@ class UpdateHistoryReq(BaseModel):
 class PreferencesReq(BaseModel):
     email: str
     chat_color: str
-    language: str  # 👈 Added Language
+    language: str 
 
 # --- AUTH ENDPOINTS ---
 @app.post("/api/auth/login")
@@ -239,7 +236,7 @@ def chat_stream(req: ChatReq):
 
     def event_generator():
         full_response = ""
-        # Passes the language from the request into ask_veda_stream
+        # 👇 CRITICAL FIX: req.language is finally passed to ask_veda_stream
         for chunk in ask_veda_stream(req.user_email, req.question, req.subject, chat_history, req.language):
             full_response += chunk
             yield chunk
