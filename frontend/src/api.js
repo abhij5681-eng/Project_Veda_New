@@ -176,17 +176,21 @@ export async function getUserPreferences(email) {
   }
 }
 
-// 👇 UPDATED: Adjusted to accept color and language specifically
-export async function updateUserPreferences(email, chatColor, language) {
+// Replace your existing updateUserPreferences with this:
+export async function updateUserPreferences(email, preferences) {
   if (!email) return;
   try {
     const { error } = await supabase
       .from('user_preferences')
-      .upsert({ email, chat_color: chatColor, language: language, updated_at: new Date() });
+      .upsert({ email, ...preferences, updated_at: new Date() });
     
-    if (error) console.error("Error saving preferences:", error);
+    if (error) {
+      console.error("Supabase Error:", error);
+      throw error;
+    }
   } catch (err) {
     console.error("Failed to save preferences", err);
+    throw err;
   }
 }
 

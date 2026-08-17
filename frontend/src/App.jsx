@@ -69,39 +69,45 @@ export default function App() {
     localStorage.removeItem('veda_user'); 
   };
 
-  const toggleTheme = () => {
+  const toggleTheme = async () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     localStorage.setItem('veda_theme', newTheme);
+    try {
+      await updateUserPreferences(userEmail, { chat_color: chatColor, language, theme: newTheme, workspace_color: workspaceColor });
+    } catch (e) {}
   };
 
   const handleChatColorChange = async (color) => {
     setChatColor(color);
     localStorage.setItem('veda_chat_color', color);
     try {
-      // Send color and language to Supabase
-      await updateUserPreferences(userEmail, color, language);
+      await updateUserPreferences(userEmail, { chat_color: color, language, theme, workspace_color: workspaceColor });
     } catch (error) {
       console.error("Failed to save color preference", error);
     }
   };
 
-  const handleWorkspaceColorChange = (color) => {
+  const handleWorkspaceColorChange = async (color) => {
     setWorkspaceColor(color);
     localStorage.setItem('veda_workspace_color', color);
+    try {
+      await updateUserPreferences(userEmail, { chat_color: chatColor, language, theme, workspace_color: color });
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleLanguageChange = async (newLang) => {
     setLanguage(newLang);
     localStorage.setItem('veda_language', newLang);
     try {
-      // Send color and language to Supabase
-      await updateUserPreferences(userEmail, chatColor, newLang);
+      await updateUserPreferences(userEmail, { chat_color: chatColor, language: newLang, theme, workspace_color: workspaceColor });
     } catch (error) {
       console.error("Failed to save language preference", error);
     }
   };
-
+  
   if (!userEmail) {
     return <div className={theme === 'light' ? 'light-mode' : ''}><Auth onLoginSuccess={handleLoginSuccess} /></div>;
   }
