@@ -26,12 +26,12 @@ const TypewriterMessage = ({ content, isLast, loading, formatMessage }) => {
   );
 };
 
-export default function ChatInterface({ userEmail, activeSubject, isMobile, onOpenSidebar, chatColor }) {
+// 👇 Added 'language' to the props here
+export default function ChatInterface({ userEmail, activeSubject, isMobile, onOpenSidebar, chatColor, language }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // --- NEW QUIZ STATE ---
   const [isQuizOpen, setIsQuizOpen] = useState(false);
   const [quizData, setQuizData] = useState(null);
   const [quizLoading, setQuizLoading] = useState(false);
@@ -45,7 +45,7 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
   useEffect(() => {
     if (activeSubject && userEmail) {
       getChatHistory(userEmail, activeSubject).then(setMessages);
-      closeQuiz(); // Reset quiz state when switching workspaces
+      closeQuiz(); 
       setEditingIndex(null);
     }
   }, [activeSubject, userEmail]);
@@ -79,13 +79,14 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
     setLoading(true);
 
     try {
+      // 👇 Passed 'language' into the chat stream API
       await streamVedaChat(userEmail, activeSubject, userQ, (chunk) => {
         setMessages((prev) => {
           const last = { ...prev[prev.length - 1] };
           last.content += chunk;
           return [...prev.slice(0, -1), last];
         });
-      });
+      }, language);
     } catch (error) {
       setMessages((prev) => {
         const last = { ...prev[prev.length - 1] };
@@ -116,12 +117,12 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
     }
   };
 
-  // --- NEW QUIZ LOGIC ---
   const fetchNewQuizQuestion = async () => {
     setQuizLoading(true);
     setSelectedOption(null);
     try {
-      const data = await generateQuizQuestion(userEmail, activeSubject);
+      // 👇 Passed 'language' into the quiz generator API
+      const data = await generateQuizQuestion(userEmail, activeSubject, language);
       setQuizData(data);
     } catch (error) {
       console.error(error);
@@ -152,13 +153,14 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
     setMessages((prev) => [...prev, { role: 'user', content: "Please generate a summary study guide." }, { role: 'assistant', content: '' }]);
     
     try {
+      // 👇 Passed 'language' into the study guide generator API
       await generateToolStream(userEmail, activeSubject, toolType, (fullText) => {
         setMessages((prev) => {
           const last = { ...prev[prev.length - 1] };
           last.content = fullText;
           return [...prev.slice(0, -1), last];
         });
-      });
+      }, language);
     } catch (error) {
       setMessages((prev) => {
         const last = { ...prev[prev.length - 1] };
@@ -175,7 +177,7 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
       <div style={{ "--primary": chatColor, flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-dark)' }}>
         {isMobile && (
           <div style={{ flexShrink: 0, padding: '1rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-panel)' }}>
-            <button onClick={onOpenSidebar} style={{ background: 'transparent', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button onClick={onOpenSidebar} style={{ background: 'transparent', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
               <Menu size={24} /> <span style={{ fontWeight: '600' }}>Menu</span>
             </button>
           </div>
@@ -188,10 +190,8 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
   }
 
   return (
-    // Added position: relative so the modal covers only the chat interface
     <div style={{ position: 'relative', "--primary": chatColor, flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-dark)' }}>
       
-      {/* --- NEW QUIZ OVERLAY MODAL --- */}
       {isQuizOpen && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div style={{ background: 'var(--bg-panel)', width: '100%', maxWidth: '600px', borderRadius: '12px', border: `1px solid var(--border)`, padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
@@ -265,7 +265,7 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
 
                 {selectedOption && (
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                    <button onClick={fetchNewQuizQuestion} className="btn-primary" style={{ backgroundColor: chatColor, borderColor: chatColor, color: '#fff', padding: '0.75rem 1.5rem', borderRadius: '8px' }}>
+                    <button onClick={fetchNewQuizQuestion} className="btn-primary" style={{ backgroundColor: chatColor, borderColor: chatColor, color: '#fff', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>
                       Next Question
                     </button>
                   </div>
@@ -278,11 +278,10 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
         </div>
       )}
 
-      {/* --- STANDARD CHAT UI (Unchanged) --- */}
       <div style={{ flexShrink: 0, padding: isMobile ? '1rem' : '1rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-panel)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {isMobile && (
-            <button onClick={onOpenSidebar} style={{ background: 'transparent', color: 'var(--text-main)', padding: '0.25rem' }}>
+            <button onClick={onOpenSidebar} style={{ background: 'transparent', color: 'var(--text-main)', padding: '0.25rem', cursor: 'pointer' }}>
               <Menu size={24} />
             </button>
           )}
