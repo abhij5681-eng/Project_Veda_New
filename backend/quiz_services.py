@@ -1,0 +1,102 @@
+import os
+import json
+from typing import List
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+import google.generativeai as genai
+from db_services import get_supabase, get_subject_text
+
+# Configure Gemini
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+router = APIRouter(prefix="/api/quiz", tags=["Quiz"])
+
+# Pydantic Schemas
+class QuizRequest(BaseModel):
+    user_id: str          # Email or User ID
+    workspace_id: str     # Subject / Workspace Name
+
+class QuizResponse(BaseModel):
+    question: str
+    options: List[str]
+    correct_answer: str
+    concept_tested: str
+
+@router.post("/generate", response_model=QuizResponse)
+async def generate_quiz_question(request: QuizRequest):
+    try:
+        supabase = get_supabase()
+
+        # 1. Fetch or Create Active Quiz Session
+        session_response = supabase.table('quiz_sessions').select('*') \
+            .eq('user_id', request.user_id) \
+            .eq('workspace_id', request.workspace_id) \
+            .eq('is_active', True).execute()
+        
+        if not session_response.data:
+            new_session = supabase.table('quiz_sessions').insert({
+                'user_id': request.user_id,
+                'workspace_id': request.workspace_id
+            }).execute()
+            session_data = new_session.data[0]
+        else:
+            session_data = session_response.data[0]
+
+        session_id = session_data['id']
+        concepts_tested = session_data.get('concepts_tested', []) or []
+        previous_questions = session_data.get('previous_questions', []) or []
+
+        # 2. Retrieve Subject Context from Notes
+        rag_context = get_subject_text(request.workspace_id, request.user_id)
+        if not rag_context:
+            raise HTTPException(status_code=400, detail="No study notes found in this workspace to generate a quiz.")
+
+        # 3. Construct Strict JSON Prompt
+        prompt = f"""
+        You are an expert educational tutor generating a multiple-choice quiz question based on the provided material.
+        
+        Source Material:
+        {rag_context[:30000]}
+        
+        Constraints:
+        1. Generate EXACTLY ONE multiple-choice question testing the source material.
+        2. DO NOT test any of these previously tested concepts: {concepts_tested}
+        3. DO NOT repeat or substantially rephrase any of these previous questions: {previous_questions}
+        4. Provide exactly 4 options.
+        
+        Return ONLY a raw JSON object matching this exact structure:
+        {{
+            "question": "The question text",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correct_answer": "The exact string matching the correct option from options array",
+            "concept_tested": "A 2-4 word snake_case summary of the concept (e.g., gradient_descent)"
+        }}
+        """
+
+        # 4. Call Gemini with Forced JSON Output
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.GenerationConfig(
+                response_mime_type="application/json",
+            )
+        )
+        
+        quiz_data = json.loads(response.text)
+
+        # 5. Update Session State in Supabase
+        new_concepts = concepts_tested + [quiz_data['concept_tested']]
+        new_questions = previous_questions + [quiz_data['question']]
+        
+        supabase.table('quiz_sessions').update({
+            'concepts_tested': new_concepts,
+            'previous_questions': new_questions
+        }).eq('id', session_id).execute()
+
+        return quiz_data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Quiz Generation Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate quiz question: {str(e)}")

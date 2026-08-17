@@ -1,13 +1,14 @@
 import os
 from datetime import datetime, timedelta, timezone
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 from typing import List, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
+
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from db_services import (
     delete_workspace,
@@ -24,7 +25,9 @@ from db_services import (
 )
 from auth_services import hash_password, verify_password, generate_otp, send_otp_email
 from ai_services import ask_veda_stream, generate_with_failover_stream
+from quiz_services import router as quiz_router
 
+# --- APP INITIALIZATION ---
 app = FastAPI(title="Project Veda API")
 
 # --- PRODUCTION CORS SETUP ---
@@ -45,6 +48,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- INCLUDE ROUTERS ---
+app.include_router(quiz_router)
 
 # Request Models
 class LoginReq(BaseModel):
@@ -94,7 +100,6 @@ def request_otp(req: SignupReq):
     otp = generate_otp()
     expires = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
     
-    
     supabase.table("otp_requests").upsert({
         "email": req.email, 
         "otp_code": otp,
@@ -132,15 +137,12 @@ async def upload_file(
     subject: str = Form(...),
     file: UploadFile = File(...)
 ):
-    # SILENT FILTER: Ignore non-PDF files without throwing a disruptive error to UI
     if not file.filename.lower().endswith(".pdf"):
         return {"message": f"Silently ignored non-PDF: {file.filename}", "status": "ignored"}
 
     try:
         contents = await file.read()
-        
         chunks = process_pdf(contents)
-            
         upload_to_supabase_storage(user_email, subject, file.filename, contents)
         
         supabase = get_supabase()
@@ -167,18 +169,11 @@ async def delete_document(
     user_email: str
 ):
     try:
-        supabase = get_supabase() # 👈 FIXED: Initialized supabase client here
-        
+        supabase = get_supabase()
         file_path = f"{user_email}/{subject}/{filename}"
-        
-        # Physically delete the file from the Supabase storage bucket
         supabase.storage.from_("veda_pdfs").remove([file_path])
-        
-        # Call your helper to wipe file memory/embeddings
         delete_file(user_email, subject, filename)
-        
         return {"message": f"Successfully deleted {filename} from storage and memory"}
-    
     except Exception as e:
         print(f"Delete error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
