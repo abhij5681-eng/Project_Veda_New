@@ -3,7 +3,6 @@ import Auth from './components/Auth';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import Settings from './components/Settings';
-// Import the new API functions
 import { getInventory, getUserPreferences, updateUserPreferences } from './api';
 
 export default function App() {
@@ -16,16 +15,11 @@ export default function App() {
   
   const [currentView, setCurrentView] = useState('chat'); // 'chat' | 'settings'
   
-  // States initialized from localStorage as a fallback
+  // States initialized from localStorage as a fast fallback
   const [theme, setTheme] = useState(localStorage.getItem('veda_theme') || 'dark');
   const [chatColor, setChatColor] = useState(localStorage.getItem('veda_chat_color') || '#3b82f6');
   const [workspaceColor, setWorkspaceColor] = useState(localStorage.getItem('veda_workspace_color') || '#10b981');
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const [language, setLanguage] = useState(localStorage.getItem('veda_language') || 'English');
 
   // Fetch inventory AND Supabase preferences when user logs in
   useEffect(() => {
@@ -36,20 +30,20 @@ export default function App() {
   }, [userEmail]);
 
   const loadCloudPreferences = async (email) => {
-    const prefs = await getUserPreferences(email);
-    if (prefs) {
-      if (prefs.theme) {
-        setTheme(prefs.theme);
-        localStorage.setItem('veda_theme', prefs.theme);
+    try {
+      const prefs = await getUserPreferences(email);
+      if (prefs) {
+        if (prefs.chat_color) {
+          setChatColor(prefs.chat_color);
+          localStorage.setItem('veda_chat_color', prefs.chat_color);
+        }
+        if (prefs.language) {
+          setLanguage(prefs.language);
+          localStorage.setItem('veda_language', prefs.language);
+        }
       }
-      if (prefs.chat_color) {
-        setChatColor(prefs.chat_color);
-        localStorage.setItem('veda_chat_color', prefs.chat_color);
-      }
-      if (prefs.workspace_color) {
-        setWorkspaceColor(prefs.workspace_color);
-        localStorage.setItem('veda_workspace_color', prefs.workspace_color);
-      }
+    } catch (error) {
+      console.error("Failed to load cloud preferences", error);
     }
   };
 
@@ -79,19 +73,33 @@ export default function App() {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     localStorage.setItem('veda_theme', newTheme);
-    updateUserPreferences(userEmail, { theme: newTheme, chat_color: chatColor, workspace_color: workspaceColor });
   };
 
-  const handleChatColorChange = (color) => {
+  const handleChatColorChange = async (color) => {
     setChatColor(color);
     localStorage.setItem('veda_chat_color', color);
-    updateUserPreferences(userEmail, { theme, chat_color: color, workspace_color: workspaceColor });
+    try {
+      // Send color and language to Supabase
+      await updateUserPreferences(userEmail, color, language);
+    } catch (error) {
+      console.error("Failed to save color preference", error);
+    }
   };
 
   const handleWorkspaceColorChange = (color) => {
     setWorkspaceColor(color);
     localStorage.setItem('veda_workspace_color', color);
-    updateUserPreferences(userEmail, { theme, chat_color: chatColor, workspace_color: color });
+  };
+
+  const handleLanguageChange = async (newLang) => {
+    setLanguage(newLang);
+    localStorage.setItem('veda_language', newLang);
+    try {
+      // Send color and language to Supabase
+      await updateUserPreferences(userEmail, chatColor, newLang);
+    } catch (error) {
+      console.error("Failed to save language preference", error);
+    }
   };
 
   if (!userEmail) {
@@ -139,6 +147,7 @@ export default function App() {
             theme={theme} toggleTheme={toggleTheme}
             chatColor={chatColor} onChatColorChange={handleChatColorChange}
             workspaceColor={workspaceColor} onWorkspaceColorChange={handleWorkspaceColorChange}
+            language={language} onLanguageChange={handleLanguageChange}
             onBack={() => setCurrentView('chat')}
             isMobile={isMobile}
           />
@@ -149,6 +158,7 @@ export default function App() {
             isMobile={isMobile}
             onOpenSidebar={() => setSidebarOpen(true)}
             chatColor={chatColor}
+            language={language}
           />
         )}
       </div>

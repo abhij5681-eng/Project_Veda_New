@@ -13,8 +13,9 @@ router = APIRouter(prefix="/api/quiz", tags=["Quiz"])
 
 # Pydantic Schemas
 class QuizRequest(BaseModel):
-    user_id: str          # Email or User ID
-    workspace_id: str     # Subject / Workspace Name
+    user_id: str          
+    workspace_id: str     
+    language: str = "English"  # 👈 Added Language
 
 class QuizResponse(BaseModel):
     question: str
@@ -51,7 +52,7 @@ async def generate_quiz_question(request: QuizRequest):
         if not rag_context:
             raise HTTPException(status_code=400, detail="No study notes found in this workspace to generate a quiz.")
 
-        # 3. Construct Strict JSON Prompt
+        # 3. Construct Strict JSON Prompt (With Language Injection)
         prompt = f"""
         You are an expert educational tutor generating a multiple-choice quiz question based on the provided material.
         
@@ -63,13 +64,14 @@ async def generate_quiz_question(request: QuizRequest):
         2. DO NOT test any of these previously tested concepts: {concepts_tested}
         3. DO NOT repeat or substantially rephrase any of these previous questions: {previous_questions}
         4. Provide exactly 4 options.
+        5. CRITICAL: The text for the question, options, and correct_answer MUST be translated and written in {request.language}.
         
-        Return ONLY a raw JSON object matching this exact structure:
+        Return ONLY a raw JSON object matching this exact structure (You MUST keep the dictionary keys in English!):
         {{
-            "question": "The question text",
-            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "question": "The translated question text in {request.language}",
+            "options": ["Option A in {request.language}", "Option B in {request.language}", "Option C in {request.language}", "Option D in {request.language}"],
             "correct_answer": "The exact string matching the correct option from options array",
-            "concept_tested": "A 2-4 word snake_case summary of the concept (e.g., gradient_descent)"
+            "concept_tested": "A 2-4 word snake_case summary of the concept in English"
         }}
         """
 

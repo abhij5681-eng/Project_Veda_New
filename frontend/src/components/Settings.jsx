@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, ArrowLeft, PaintBucket, Layout } from 'lucide-react';
+import { Sun, Moon, ArrowLeft, PaintBucket, Layout, Globe } from 'lucide-react';
 
 const PREMIUM_COLORS = [
   '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', 
@@ -8,13 +8,36 @@ const PREMIUM_COLORS = [
   '#a855f7', '#8b5cf6', '#6366f1', '#64748b'
 ];
 
-export default function Settings({ theme, toggleTheme, chatColor, onChatColorChange, workspaceColor, onWorkspaceColorChange, onBack, isMobile }) {
+const SUPPORTED_LANGUAGES = [
+  // Global
+  { value: 'English', label: 'English' },
+  { value: 'Spanish', label: 'Español (Spanish)' },
+  { value: 'French', label: 'Français (French)' },
+  { value: 'German', label: 'Deutsch (German)' },
+  { value: 'Arabic', label: 'العربية (Arabic)' },
+  { value: 'Mandarin', label: '中文 (Mandarin)' },
+  { value: 'Japanese', label: '日本語 (Japanese)' },
+  // Indian Languages
+  { value: 'Hindi', label: 'हिन्दी (Hindi)' },
+  { value: 'Bengali', label: 'বাংলা (Bengali)' },
+  { value: 'Marathi', label: 'मराठी (Marathi)' },
+  { value: 'Telugu', label: 'తెలుగు (Telugu)' },
+  { value: 'Tamil', label: 'தமிழ் (Tamil)' },
+  { value: 'Gujarati', label: 'ગુજરાતી (Gujarati)' },
+  { value: 'Urdu', label: 'اردو (Urdu)' },
+  { value: 'Kannada', label: 'ಕನ್ನಡ (Kannada)' },
+  { value: 'Odia', label: 'ଓଡ଼ିଆ (Odia)' },
+  { value: 'Malayalam', label: 'മലയാളം (Malayalam)' },
+  { value: 'Punjabi', label: 'ਪੰਜਾਬੀ (Punjabi)' }
+];
+
+export default function Settings({ theme, toggleTheme, chatColor, onChatColorChange, workspaceColor, onWorkspaceColorChange, language, onLanguageChange, onBack, isMobile }) {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg-dark)', overflowY: 'auto' }}>
       
       {/* Header */}
       <div style={{ flexShrink: 0, padding: isMobile ? '1rem' : '1.5rem 3rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-panel)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <button onClick={onBack} style={{ background: 'transparent', color: 'var(--text-main)', display: 'flex', alignItems: 'center', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+        <button onClick={onBack} style={{ background: 'transparent', color: 'var(--text-main)', display: 'flex', alignItems: 'center', padding: '0.5rem', borderRadius: '8px', border: '1px solid var(--border)', cursor: 'pointer' }}>
           <ArrowLeft size={18} />
         </button>
         <h2 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-main)', margin: 0 }}>Settings</h2>
@@ -30,10 +53,42 @@ export default function Settings({ theme, toggleTheme, chatColor, onChatColorCha
           </h3>
           <div style={{ background: 'var(--bg-panel)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>Choose between a light reading environment or a dark, high-contrast workspace.</p>
-            <button onClick={toggleTheme} style={{ width: isMobile ? '100%' : 'auto', padding: '0.75rem 2rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.95rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', borderRadius: '8px' }}>
+            <button onClick={toggleTheme} style={{ width: isMobile ? '100%' : 'auto', padding: '0.75rem 2rem', backgroundColor: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', fontSize: '0.95rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', borderRadius: '8px', cursor: 'pointer' }}>
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />} 
               Switch to {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
             </button>
+          </div>
+        </section>
+
+        {/* Language Section */}
+        <section>
+          <h3 style={{ fontSize: '1.1rem', color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Globe size={18} color="var(--primary)" /> Language
+          </h3>
+          <div style={{ background: 'var(--bg-panel)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>Choose the language Veda should use when responding to your chats, quizzes, and study guides.</p>
+            <select
+              value={language || 'English'}
+              onChange={(e) => onLanguageChange(e.target.value)}
+              style={{
+                width: isMobile ? '100%' : '300px',
+                padding: '0.75rem 1rem',
+                backgroundColor: 'var(--bg-dark)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-main)',
+                fontSize: '0.95rem',
+                borderRadius: '8px',
+                outline: 'none',
+                cursor: 'pointer',
+                appearance: 'auto'
+              }}
+            >
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <option key={lang.value} value={lang.value}>
+                  {lang.label}
+                </option>
+              ))}
+            </select>
           </div>
         </section>
 

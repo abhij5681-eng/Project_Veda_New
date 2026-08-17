@@ -1,6 +1,5 @@
 import os
 from google import genai
-# Import our new local embedding function!
 from db_services import get_supabase, get_embedding 
 
 # Keep the Google Client ONLY for the actual AI chat responses
@@ -9,7 +8,6 @@ client = genai.Client(
 )
 
 def generate_with_failover_stream(prompt):
-    # ... keep this exactly as is ...
     response = client.models.generate_content_stream(
         model='gemini-3.5-flash-lite',
         contents=prompt
@@ -18,13 +16,12 @@ def generate_with_failover_stream(prompt):
         if chunk.text:
             yield chunk.text
 
-def ask_veda_stream(user_email, question, subject_name, chat_history):
+# 👇 Added language="English" parameter here
+def ask_veda_stream(user_email, question, subject_name, chat_history, language="English"):
     """The main chat function using Supabase pgvector for memory retrieval."""
     supabase = get_supabase()
 
-    # ---------------------------------------------------------
     # Call the local model to convert the question into a vector
-    # ---------------------------------------------------------
     query_embedding = get_embedding(question)
 
     # Call our custom Supabase Search Function
@@ -38,14 +35,12 @@ def ask_veda_stream(user_email, question, subject_name, chat_history):
         }
     ).execute()
     
-    # ... keep the rest of the function exactly as it is ...
-    
-    # 5. Check if we found documents
+    # Check if we found documents
     if not results.data:
         yield f"I don't have any notes on '{subject_name}' in your personal records to answer this yet."
         return
         
-    # 6. Inject the actual file names directly into the context text
+    # Inject the actual file names directly into the context text
     context_parts = []
     for row in results.data:
         doc_text = row['content']
@@ -64,6 +59,8 @@ def ask_veda_stream(user_email, question, subject_name, chat_history):
     prompt = f"""
     You are Veda, an experienced, warm, and dedicated human-like teacher holding a class with your student. 
     Speak naturally, encourage curiosity, use conversational phrasing, and show genuine enthusiasm for teaching. Never refer to yourself as an AI, a computer program, a model, or Gemini. 
+    
+    CRITICAL: You MUST communicate with the student entirely in {language}.
 
     You must adhere strictly to these two behaviors:
     
@@ -89,8 +86,7 @@ def ask_veda_stream(user_email, question, subject_name, chat_history):
     Student's Message: {question}
     """
 
-    # 7. Stream the final chat response back to the frontend
-    # 7. Stream the final chat response back to the frontend
+    # Stream the final chat response back to the frontend
     try:
         response = client.models.generate_content_stream(
             model='gemini-3.5-flash-lite',
@@ -100,13 +96,8 @@ def ask_veda_stream(user_email, question, subject_name, chat_history):
             if chunk.text:
                 yield chunk.text
     except Exception as e:
-        # If Google's servers are busy or crash, Veda will gracefully tell you!
         error_msg = str(e)
         if "503" in error_msg:
             yield "\n\n*(System Note: Google's AI servers are currently experiencing heavy traffic. Please wait a moment and try asking again!)*"
         else:
             yield f"\n\n*(System Note: An AI connection error occurred: {error_msg})*"
-
-    for chunk in response:
-        if chunk.text:
-            yield chunk.text

@@ -52,7 +52,7 @@ app.add_middleware(
 # --- INCLUDE ROUTERS ---
 app.include_router(quiz_router)
 
-# Request Models
+# --- REQUEST MODELS ---
 class LoginReq(BaseModel):
     email: str
     password: str
@@ -70,16 +70,23 @@ class ChatReq(BaseModel):
     user_email: str
     subject: str
     question: str
+    language: str = "English"  # 👈 Added Language
 
 class ToolReq(BaseModel):
     user_email: str
     subject: str
     tool_type: str  # "quiz" or "summary"
+    language: str = "English"  # 👈 Added Language
 
 class UpdateHistoryReq(BaseModel):
     user_email: str
     subject: str
     messages: list
+
+class PreferencesReq(BaseModel):
+    email: str
+    chat_color: str
+    language: str  # 👈 Added Language
 
 # --- AUTH ENDPOINTS ---
 @app.post("/api/auth/login")
@@ -120,6 +127,25 @@ def verify_otp(req: VerifyOtpReq):
         supabase.table("otp_requests").delete().eq("email", req.email).execute()
         return {"status": "success", "message": "Account created!"}
     raise HTTPException(status_code=400, detail="Invalid OTP code")
+
+# --- PREFERENCES ENDPOINTS ---
+@app.post("/api/user/preferences")
+def update_preferences(req: PreferencesReq):
+    supabase = get_supabase()
+    supabase.table("user_preferences").upsert({
+        "email": req.email,
+        "chat_color": req.chat_color,
+        "language": req.language
+    }).execute()
+    return {"status": "success"}
+
+@app.get("/api/user/preferences/{email}")
+def get_preferences(email: str):
+    supabase = get_supabase()
+    res = supabase.table("user_preferences").select("*").eq("email", email).execute()
+    if res.data:
+        return res.data[0]
+    return {"chat_color": "#6366f1", "language": "English"}
 
 # --- WORKSPACE & INGESTION ENDPOINTS ---
 @app.get("/api/inventory/{user_email}")
@@ -213,7 +239,8 @@ def chat_stream(req: ChatReq):
 
     def event_generator():
         full_response = ""
-        for chunk in ask_veda_stream(req.user_email, req.question, req.subject, chat_history):
+        # Passes the language from the request into ask_veda_stream
+        for chunk in ask_veda_stream(req.user_email, req.question, req.subject, chat_history, req.language):
             full_response += chunk
             yield chunk
         save_chat_message(req.user_email, req.subject, "assistant", full_response)
@@ -233,11 +260,12 @@ def generate_tool(req: ToolReq):
         2. Provide the question and options A, B, C, and D.
         3. DO NOT output more than one question.
         4. DO NOT provide the answer key or tell the student the correct answer yet. 
+        5. You MUST write the question and all options entirely in {req.language}.
         
         Notes:
         {subject_text[:30000]}"""
     else:
-        prompt = f"You are Veda. Provide a concise, structured study guide with Main Themes, Core Concepts, and Critical Takeaways based on these notes:\n\n{subject_text[:30000]}"
+        prompt = f"You are Veda. Provide a concise, structured study guide with Main Themes, Core Concepts, and Critical Takeaways based on these notes. You MUST write the entire study guide in {req.language}:\n\n{subject_text[:30000]}"
 
     def event_generator():
         full_response = ""
