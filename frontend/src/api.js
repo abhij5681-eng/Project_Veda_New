@@ -190,3 +190,13 @@ export async function updateUserPreferences(email, preferences) {
     console.error("Failed to save preferences", err);
   }
 }
+// Add this to api.js
+export const generateQuizQuestion = async (userEmail, activeSubject) => {
+  const response = await fetch(`http://localhost:8000/api/quiz/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userEmail, workspace_id: activeSubject })
+  });
+  if (!response.ok) throw new Error("Failed to generate quiz");
+  return await response.json();
+};
