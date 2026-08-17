@@ -20,7 +20,6 @@ export async function loginUser(email, password) {
 
 export async function getInventory(userEmail) {
   const res = await fetch(`${API_BASE}/inventory/${userEmail}`, {
-    // Add these headers to bypass browser caching completely
     headers: {
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Pragma': 'no-cache',
@@ -31,7 +30,6 @@ export async function getInventory(userEmail) {
 }
 
 export async function uploadFile(userEmail, subject, file) {
-  // Check if the file is a PDF right on the frontend
   if (!file.name.toLowerCase().endsWith('.pdf')) {
     throw new Error("Currently, Veda only supports PDF files. Please upload a PDF document!");
   }
@@ -52,7 +50,7 @@ export async function uploadFile(userEmail, subject, file) {
       const errorData = await res.json();
       errorMessage = errorData.detail || errorData.message || errorMessage;
     } catch (e) {
-      // Fallback if response is not JSON
+      // Fallback
     }
     throw new Error(errorMessage);
   }
@@ -65,11 +63,12 @@ export async function getChatHistory(userEmail, subject) {
   return res.json();
 }
 
-export async function streamVedaChat(userEmail, subject, question, onChunk) {
+// 👇 UPDATED: Added language parameter and payload
+export async function streamVedaChat(userEmail, subject, question, onChunk, language="English") {
   const response = await fetch(`${API_BASE}/chat/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_email: userEmail, subject, question }),
+    body: JSON.stringify({ user_email: userEmail, subject, question, language }),
   });
 
   const reader = response.body.getReader();
@@ -83,11 +82,12 @@ export async function streamVedaChat(userEmail, subject, question, onChunk) {
   }
 }
 
-export async function generateToolStream(userEmail, subject, toolType, onChunk) {
+// 👇 UPDATED: Added language parameter and payload
+export async function generateToolStream(userEmail, subject, toolType, onChunk, language="English") {
   const response = await fetch(`${API_BASE}/tools/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_email: userEmail, subject, tool_type: toolType }),
+    body: JSON.stringify({ user_email: userEmail, subject, tool_type: toolType, language }),
   });
 
   const reader = response.body.getReader();
@@ -156,7 +156,6 @@ export async function replaceChatHistory(userEmail, subject, messages) {
   return res.json();
 }
 
-// Fetch user preferences from Supabase (safe from 406 errors)
 export async function getUserPreferences(email) {
   if (!email) return null;
   try {
@@ -177,25 +176,26 @@ export async function getUserPreferences(email) {
   }
 }
 
-// Save or update user preferences in Supabase
-export async function updateUserPreferences(email, preferences) {
+// 👇 UPDATED: Adjusted to accept color and language specifically
+export async function updateUserPreferences(email, chatColor, language) {
   if (!email) return;
   try {
     const { error } = await supabase
       .from('user_preferences')
-      .upsert({ email, ...preferences, updated_at: new Date() });
+      .upsert({ email, chat_color: chatColor, language: language, updated_at: new Date() });
     
     if (error) console.error("Error saving preferences:", error);
   } catch (err) {
     console.error("Failed to save preferences", err);
   }
 }
-// Add this to api.js
-export const generateQuizQuestion = async (userEmail, activeSubject) => {
-  const response = await fetch(`http://localhost:8000/api/quiz/generate`, {
+
+// 👇 UPDATED: Changed localhost:8000 to API_BASE and added language
+export const generateQuizQuestion = async (userEmail, activeSubject, language="English") => {
+  const response = await fetch(`${API_BASE}/quiz/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: userEmail, workspace_id: activeSubject })
+    body: JSON.stringify({ user_id: userEmail, workspace_id: activeSubject, language })
   });
   if (!response.ok) throw new Error("Failed to generate quiz");
   return await response.json();
