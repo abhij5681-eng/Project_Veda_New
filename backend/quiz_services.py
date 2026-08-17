@@ -3,11 +3,9 @@ import json
 from typing import List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from db_services import get_supabase, get_subject_text
-
-# Configure Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 router = APIRouter(prefix="/api/quiz", tags=["Quiz"])
 
@@ -15,7 +13,7 @@ router = APIRouter(prefix="/api/quiz", tags=["Quiz"])
 class QuizRequest(BaseModel):
     user_id: str          
     workspace_id: str     
-    language: str = "English"  # 👈 Added Language
+    language: str = "English" 
 
 class QuizResponse(BaseModel):
     question: str
@@ -75,11 +73,12 @@ async def generate_quiz_question(request: QuizRequest):
         }}
         """
 
-        # 4. Call Gemini with Forced JSON Output
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(
-            prompt,
-            generation_config=genai.GenerationConfig(
+        # 4. Call Gemini with Forced JSON Output using the NEW SDK
+        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+        response = client.models.generate_content(
+            model='gemini-3.5-flash-lite',
+            contents=prompt,
+            config=types.GenerateContentConfig(
                 response_mime_type="application/json",
             )
         )
