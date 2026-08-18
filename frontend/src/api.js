@@ -204,3 +204,13 @@ export const generateQuizQuestion = async (userEmail, activeSubject, language="E
   if (!response.ok) throw new Error("Failed to generate quiz");
   return await response.json();
 };
+
+export const fetchProactiveQuestion = async (userEmail, activeSubject, language = "English") => {
+  const response = await fetch(`${API_BASE}/quiz/proactive`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_email: userEmail, workspace_id: activeSubject, language })
+  });
+  if (!response.ok) throw new Error("Failed to fetch background question");
+  return await response.json();
+};

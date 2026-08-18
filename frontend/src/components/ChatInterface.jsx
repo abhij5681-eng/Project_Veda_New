@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getChatHistory, streamVedaChat, generateToolStream, replaceChatHistory, generateQuizQuestion } from '../api';
+import { getChatHistory, streamVedaChat, generateToolStream, replaceChatHistory, generateQuizQuestion, fetchProactiveQuestion } from '../api';
 import { Send, ScrollText, FileQuestion, Pencil, Sparkles, Menu, X } from 'lucide-react';
 
 const TypewriterMessage = ({ content, isLast, loading, formatMessage }) => {
@@ -40,14 +40,24 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
   const [editValue, setEditValue] = useState('');
 
   const messagesEndRef = useRef(null);
-
+  
+  const [proactiveCache, setProactiveCache] = useState(null);
+  const [messageCountSinceCheckIn, setMessageCountSinceCheckIn] = useState(0);
+  
   useEffect(() => {
-    if (activeSubject && userEmail) {
-      getChatHistory(userEmail, activeSubject).then(setMessages);
-      closeQuiz(); 
-      setEditingIndex(null);
-    }
-  }, [activeSubject, userEmail]);
+  if (activeSubject && userEmail) {
+    getChatHistory(userEmail, activeSubject).then(setMessages);
+    closeQuiz(); 
+    setEditingIndex(null);
+
+    // 👇 Silently pre-fetch a question in the background right on startup
+    setProactiveCache(null);
+    setMessageCountSinceCheckIn(0);
+    fetchProactiveQuestion(userEmail, activeSubject, language)
+      .then(data => { if (data.status === 'success') setProactiveCache(data); })
+      .catch(err => console.log("Background pre-fetch idle:", err));
+  }
+  }, [activeSubject, userEmail, language]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
@@ -85,6 +95,26 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
           return [...prev.slice(0, -1), last];
         });
       }, language);
+      // Track activity count after a successful chat stream
+const nextCount = messageCountSinceCheckIn + 1;
+setMessageCountSinceCheckIn(nextCount);
+
+// 🧠 PROACTIVE ENGINE EVALUATION:
+// If the user has chatted back and forth a bit, and a question is fully baked in the cache...
+if (nextCount >= 2 && proactiveCache) {
+  // Instantly load it from memory!
+  setQuizData(proactiveCache);
+  setIsQuizOpen(true);
+
+  // Reset triggers and flush cache for the next round
+  setProactiveCache(null);
+  setMessageCountSinceCheckIn(0);
+
+  // Silently queue up the NEXT question in the background ahead of time
+  fetchProactiveQuestion(userEmail, activeSubject, language)
+    .then(data => { if (data.status === 'success') setProactiveCache(data); })
+    .catch(err => console.log(err));
+}
     } catch (error) {
       setMessages((prev) => {
         const last = { ...prev[prev.length - 1] };
