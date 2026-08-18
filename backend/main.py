@@ -24,7 +24,7 @@ from db_services import (
     delete_file         
 )
 from auth_services import hash_password, verify_password, generate_otp, send_otp_email
-from ai_services import ask_veda_stream, generate_with_failover_stream
+from ai_services import ask_veda_stream, generate_with_failover_stream, extract_concepts
 from quiz_services import router as quiz_router
 
 app = FastAPI(title="Project Veda API")
@@ -179,12 +179,37 @@ async def upload_file(
                 "embedding": embedding
             }).execute()
             
+        # 👇 NEW: Extract and store concepts for proactive check-ins
+        try:
+            print("🧠 Extracting concepts from uploaded document...")
+            full_text = "\n".join(chunks)[:30000] # Give Gemini the first 30k characters
+            concepts = extract_concepts(full_text)
+            
+            if concepts:
+                concept_rows = [
+                    {
+                        "user_email": user_email,
+                        "workspace_id": subject,
+                        "concept_name": concept,
+                        "status": "Untested",
+                        "correct_count": 0,
+                        "total_attempts": 0
+                    }
+                    for concept in concepts
+                ]
+                
+                # Upsert into our new table!
+                supabase.table("concept_mastery").upsert(concept_rows).execute()
+                print(f"✅ Extracted and saved {len(concepts)} concepts to database!")
+        except Exception as e:
+            print(f"Warning: Concept extraction failed: {e}")
+            
         return {"message": f"Successfully uploaded {file.filename}"}
         
     except Exception as e:
         print(f"Upload error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 @app.delete("/api/file")
 async def delete_document(
     filename: str, 

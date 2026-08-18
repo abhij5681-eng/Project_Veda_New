@@ -1,6 +1,8 @@
 import os
 from google import genai
 from db_services import get_supabase, get_embedding 
+import json
+from google.genai import types
 
 # Keep the Google Client ONLY for the actual AI chat responses
 client = genai.Client(
@@ -100,3 +102,35 @@ def ask_veda_stream(user_email, question, subject_name, chat_history, language="
             yield "\n\n*(System Note: Google's AI servers are currently experiencing heavy traffic. Please wait a moment and try asking again!)*"
         else:
             yield f"\n\n*(System Note: An AI connection error occurred: {error_msg})*"
+
+def extract_concepts(text_content: str) -> list:
+    """Analyzes document text and extracts core learning concepts."""
+    try:
+        prompt = f"""
+        You are an expert educator analyzing study material.
+        Extract the core learning concepts from the text below.
+        
+        Rules:
+        1. Return EXACTLY a JSON list of strings.
+        2. Each concept must be 2-4 words, written in snake_case.
+        3. Limit to the 10 most important overarching concepts.
+        4. Do not include markdown formatting or explanations, just the raw JSON array.
+        
+        Text:
+        {text_content[:30000]}
+        """
+        
+        response = client.models.generate_content(
+            model='gemini-3.5-flash-lite',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+            )
+        )
+        
+        concepts = json.loads(response.text)
+        return concepts if isinstance(concepts, list) else []
+        
+    except Exception as e:
+        print(f"Concept Extraction Error: {e}")
+        return []
