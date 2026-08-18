@@ -5,9 +5,14 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
-from db_services import get_supabase, get_subject_text
+from db_services import get_supabase, get_subject_text,get_embedding
 
 router = APIRouter(prefix="/api/quiz", tags=["Quiz"])
+
+class ProactiveQuizRequest(BaseModel):
+    user_email: str          
+    workspace_id: str     
+    language: str = "English"
 
 # Pydantic Schemas
 class QuizRequest(BaseModel):
@@ -108,3 +113,78 @@ async def generate_quiz_question(request: QuizRequest):
     except Exception as e:
         print(f"Quiz Generation Error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate quiz question: {str(e)}")
+
+@router.post("/proactive")
+async def generate_proactive_question(request: ProactiveQuizRequest):
+    try:
+        supabase = get_supabase()
+
+        # 1. Find the highest priority concept (Untested or Weak, oldest test first)
+        concept_res = supabase.table('concept_mastery').select('*') \
+            .eq('user_email', request.user_email) \
+            .eq('workspace_id', request.workspace_id) \
+            .order('last_tested_at', desc=False, nullsfirst=True) \
+            .limit(1).execute()
+
+        if not concept_res.data:
+            return {"status": "skip", "message": "No concepts extracted yet."}
+
+        target_concept = concept_res.data[0]
+        concept_name = target_concept['concept_name']
+
+        # 2. Targeted Vector Search (Massively speeds up Gemini because we only send relevant text!)
+        concept_embedding = get_embedding(concept_name)
+        docs_res = supabase.rpc("match_veda_documents", {
+            "query_embedding": concept_embedding,
+            "match_email": request.user_email,
+            "match_subject": request.workspace_id,
+            "match_count": 2 # Only grab the 2 most relevant chunks
+        }).execute()
+
+        if not docs_res.data:
+            return {"status": "skip", "message": "Concept text not found."}
+
+        context = "\n\n".join([doc['content'] for doc in docs_res.data])
+
+        # 3. Generate a hyper-focused question
+        prompt = f"""
+        You are an expert tutor. Create a multiple-choice question testing the specific concept: '{concept_name}'.
+        
+        Source Material:
+        {context}
+        
+        Constraints:
+        1. Generate EXACTLY ONE multiple-choice question.
+        2. Provide exactly 4 options.
+        3. CRITICAL: The question, options, and correct_answer MUST be in {request.language}.
+        
+        Return ONLY a raw JSON object matching this exact structure:
+        {{
+            "question": "The translated question text in {request.language}",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correct_answer": "The exact string matching the correct option",
+            "concept_tested": "{concept_name}"
+        }}
+        """
+
+        client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+        response = client.models.generate_content(
+            model='gemini-3.5-flash-lite',
+            contents=prompt,
+            config=types.GenerateContentConfig(response_mime_type="application/json")
+        )
+        
+        # Clean JSON markdown bug
+        raw_text = response.text.strip()
+        if raw_text.startswith("```json"): raw_text = raw_text[7:-3].strip()
+        elif raw_text.startswith("```"): raw_text = raw_text[3:-3].strip()
+            
+        quiz_data = json.loads(raw_text)
+        quiz_data['status'] = 'success'
+        quiz_data['concept_id'] = target_concept['id'] # We need this to update their score later!
+
+        return quiz_data
+
+    except Exception as e:
+        print(f"Proactive Generation Error: {e}")
+        return {"status": "error", "detail": str(e)}
