@@ -73,7 +73,7 @@ async def generate_quiz_question(request: QuizRequest):
         }}
         """
 
-        # 4. Call Gemini with Forced JSON Output using the NEW SDK
+        # 4. Call Gemini with Forced JSON Output
         client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
         response = client.models.generate_content(
             model='gemini-3.5-flash-lite',
@@ -83,7 +83,14 @@ async def generate_quiz_question(request: QuizRequest):
             )
         )
         
-        quiz_data = json.loads(response.text)
+        # 👇 THE FIX: Strip hidden markdown backticks before loading JSON
+        raw_text = response.text.strip()
+        if raw_text.startswith("```json"):
+            raw_text = raw_text[7:-3].strip()
+        elif raw_text.startswith("```"):
+            raw_text = raw_text[3:-3].strip()
+            
+        quiz_data = json.loads(raw_text)
 
         # 5. Update Session State in Supabase
         new_concepts = concepts_tested + [quiz_data['concept_tested']]
