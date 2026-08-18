@@ -26,7 +26,6 @@ const TypewriterMessage = ({ content, isLast, loading, formatMessage }) => {
   );
 };
 
-// 👇 Added 'language' to the props here
 export default function ChatInterface({ userEmail, activeSubject, isMobile, onOpenSidebar, chatColor, language }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -79,7 +78,6 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
     setLoading(true);
 
     try {
-      // 👇 Passed 'language' into the chat stream API
       await streamVedaChat(userEmail, activeSubject, userQ, (chunk) => {
         setMessages((prev) => {
           const last = { ...prev[prev.length - 1] };
@@ -121,7 +119,6 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
     setQuizLoading(true);
     setSelectedOption(null);
     try {
-      // 👇 Passed 'language' into the quiz generator API
       const data = await generateQuizQuestion(userEmail, activeSubject, language);
       setQuizData(data);
     } catch (error) {
@@ -153,7 +150,6 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
     setMessages((prev) => [...prev, { role: 'user', content: "Please generate a summary study guide." }, { role: 'assistant', content: '' }]);
     
     try {
-      // 👇 Passed 'language' into the study guide generator API
       await generateToolStream(userEmail, activeSubject, toolType, (fullText) => {
         setMessages((prev) => {
           const last = { ...prev[prev.length - 1] };
@@ -222,15 +218,26 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
                     let showCorrect = selectedOption && isCorrectAnswer;
                     let showWrong = selectedOption && (selectedOption === opt) && !isCorrectAnswer;
 
-                    let bgColor = 'var(--bg-dark)';
-                    let borderColor = 'var(--border)';
+                    // 👇 FIXED: Base style matches the active workspace/chat color instead of pitch black
+                    let bgColor = chatColor; 
+                    let borderColor = chatColor;
+                    let fontColor = '#ffffff';
 
-                    if (showCorrect) {
-                      bgColor = 'rgba(16, 185, 129, 0.15)'; 
-                      borderColor = '#10b981';
-                    } else if (showWrong) {
-                      bgColor = 'rgba(239, 68, 68, 0.15)'; 
-                      borderColor = '#ef4444';
+                    if (selectedOption) {
+                      if (showCorrect) {
+                        bgColor = 'rgba(16, 185, 129, 0.2)'; 
+                        borderColor = '#10b981';
+                        fontColor = '#10b981';
+                      } else if (showWrong) {
+                        bgColor = 'rgba(239, 68, 68, 0.2)'; 
+                        borderColor = '#ef4444';
+                        fontColor = '#ef4444';
+                      } else {
+                        // Options that weren't selected fade out nicely
+                        bgColor = 'rgba(255, 255, 255, 0.03)';
+                        borderColor = 'var(--border)';
+                        fontColor = 'var(--text-muted)';
+                      }
                     }
 
                     return (
@@ -243,10 +250,11 @@ export default function ChatInterface({ userEmail, activeSubject, isMobile, onOp
                           background: bgColor,
                           border: `1px solid ${borderColor}`,
                           borderRadius: '8px',
-                          color: selectedOption && !showCorrect && !showWrong ? 'var(--text-muted)' : 'var(--text-main)',
+                          color: fontColor,
                           textAlign: 'left',
                           transition: 'all 0.2s',
-                          cursor: selectedOption ? 'default' : 'pointer'
+                          cursor: selectedOption ? 'default' : 'pointer',
+                          fontWeight: '500'
                         }}
                       >
                         {opt}
