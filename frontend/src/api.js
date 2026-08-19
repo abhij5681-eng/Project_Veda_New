@@ -214,3 +214,15 @@ export const fetchProactiveQuestion = async (userEmail, activeSubject, language 
   if (!response.ok) throw new Error("Failed to fetch background question");
   return await response.json();
 };
+
+export const updateConceptMastery = async (conceptId, isCorrect) => {
+  try {
+    await fetch(`${API_BASE}/quiz/update-mastery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ concept_id: conceptId, is_correct: isCorrect })
+    });
+  } catch (error) {
+    console.error("Failed to update Veda's memory:", error);
+  }
+};

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getChatHistory, streamVedaChat, generateToolStream, replaceChatHistory, generateQuizQuestion, fetchProactiveQuestion } from '../api';
+import { getChatHistory, streamVedaChat, generateToolStream, replaceChatHistory, generateQuizQuestion, fetchProactiveQuestion, updateConceptMastery } from '../api';
 import { Send, ScrollText, FileQuestion, Pencil, Sparkles, Menu, X } from 'lucide-react';
 
 const TypewriterMessage = ({ content, isLast, loading, formatMessage }) => {
@@ -273,7 +273,14 @@ if (nextCount >= 2 && proactiveCache) {
                     return (
                       <button
                         key={idx}
-                        onClick={() => setSelectedOption(opt)}
+                        onClick={() => {
+                        setSelectedOption(opt);
+                        // Tell Veda's brain if we got it right!
+                        if (quizData.concept_id) {
+                          const isCorrect = (opt === quizData.correct_answer);
+                          updateConceptMastery(quizData.concept_id, isCorrect);
+                        }
+                      }}
                         disabled={!!selectedOption}
                         style={{
                           padding: '1rem',

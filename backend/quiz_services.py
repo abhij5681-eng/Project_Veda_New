@@ -6,8 +6,13 @@ from pydantic import BaseModel
 from google import genai
 from google.genai import types
 from db_services import get_supabase, get_subject_text,get_embedding
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/quiz", tags=["Quiz"])
+
+class UpdateMasteryRequest(BaseModel):
+    concept_id: str
+    is_correct: bool
 
 class ProactiveQuizRequest(BaseModel):
     user_email: str          
@@ -187,4 +192,43 @@ async def generate_proactive_question(request: ProactiveQuizRequest):
 
     except Exception as e:
         print(f"Proactive Generation Error: {e}")
+        return {"status": "error", "detail": str(e)}
+    
+@router.post("/update-mastery")
+async def update_concept_mastery(request: UpdateMasteryRequest):
+    try:
+        supabase = get_supabase()
+        
+        # 1. Fetch the current stats for this concept
+        res = supabase.table('concept_mastery').select('*').eq('id', request.concept_id).execute()
+        if not res.data:
+            return {"status": "error", "message": "Concept not found"}
+            
+        concept = res.data[0]
+        attempts = concept['total_attempts'] + 1
+        corrects = concept['correct_count'] + (1 if request.is_correct else 0)
+        
+        # 2. Calculate their new mastery level
+        accuracy = corrects / attempts
+        if attempts < 2:
+            status = "Moderate" if request.is_correct else "Weak"
+        elif accuracy >= 0.8:
+            status = "Strong"
+        elif accuracy >= 0.5:
+            status = "Moderate"
+        else:
+            status = "Weak"
+            
+        # 3. Save it to Veda's brain
+        supabase.table('concept_mastery').update({
+            'total_attempts': attempts,
+            'correct_count': corrects,
+            'status': status,
+            'last_tested_at': datetime.now(timezone.utc).isoformat()
+        }).eq('id', request.concept_id).execute()
+        
+        return {"status": "success", "new_level": status}
+        
+    except Exception as e:
+        print(f"Mastery Update Error: {e}")
         return {"status": "error", "detail": str(e)}
