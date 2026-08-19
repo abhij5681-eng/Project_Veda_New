@@ -124,7 +124,7 @@ async def generate_proactive_question(request: ProactiveQuizRequest):
     try:
         supabase = get_supabase()
 
-        # 1. Find the highest priority concept (Untested or Weak, oldest test first)
+        # 1. Find the highest priority concept
         concept_res = supabase.table('concept_mastery').select('*') \
             .eq('user_email', request.user_email) \
             .eq('workspace_id', request.workspace_id) \
@@ -137,19 +137,41 @@ async def generate_proactive_question(request: ProactiveQuizRequest):
         target_concept = concept_res.data[0]
         concept_name = target_concept['concept_name']
 
-        # 2. Targeted Vector Search (Massively speeds up Gemini because we only send relevant text!)
+        # 2. Targeted Vector Search
         concept_embedding = get_embedding(concept_name)
         docs_res = supabase.rpc("match_veda_documents", {
             "query_embedding": concept_embedding,
             "match_email": request.user_email,
             "match_subject": request.workspace_id,
-            "match_count": 2 # Only grab the 2 most relevant chunks
+            "match_count": 2 
         }).execute()
 
         if not docs_res.data:
             return {"status": "skip", "message": "Concept text not found."}
 
         context = "\n\n".join([doc['content'] for doc in docs_res.data])
+
+        # 👇 NEW: Fetch previous questions to prevent duplicates!
+        session_response = supabase.table('quiz_sessions').select('*') \
+            .eq('user_id', request.user_email) \
+            .eq('workspace_id', request.workspace_id) \
+            .eq('is_active', True).execute()
+        
+        previous_questions = []
+        session_id = None
+        
+        if session_response.data:
+            session_data = session_response.data[0]
+            session_id = session_data['id']
+            previous_questions = session_data.get('previous_questions', []) or []
+        else:
+            # Create a session if it doesn't exist so proactive questions can be tracked
+            new_session = supabase.table('quiz_sessions').insert({
+                'user_id': request.user_email,
+                'workspace_id': request.workspace_id
+            }).execute()
+            if new_session.data:
+                session_id = new_session.data[0]['id']
 
         # 3. Generate a hyper-focused question
         prompt = f"""
@@ -160,8 +182,9 @@ async def generate_proactive_question(request: ProactiveQuizRequest):
         
         Constraints:
         1. Generate EXACTLY ONE multiple-choice question.
-        2. Provide exactly 4 options.
-        3. CRITICAL: The question, options, and correct_answer MUST be in {request.language}.
+        2. DO NOT test, repeat, or substantially rephrase ANY of these previously asked questions: {previous_questions}
+        3. Provide exactly 4 options.
+        4. CRITICAL: The question, options, and correct_answer MUST be in {request.language}.
         
         Return ONLY a raw JSON object matching this exact structure:
         {{
@@ -179,14 +202,20 @@ async def generate_proactive_question(request: ProactiveQuizRequest):
             config=types.GenerateContentConfig(response_mime_type="application/json")
         )
         
-        # Clean JSON markdown bug
         raw_text = response.text.strip()
         if raw_text.startswith("```json"): raw_text = raw_text[7:-3].strip()
         elif raw_text.startswith("```"): raw_text = raw_text[3:-3].strip()
             
         quiz_data = json.loads(raw_text)
         quiz_data['status'] = 'success'
-        quiz_data['concept_id'] = target_concept['id'] # We need this to update their score later!
+        quiz_data['concept_id'] = target_concept['id'] 
+        
+        # 👇 NEW: Save this new question to Veda's memory so she doesn't ask it again tomorrow!
+        if session_id:
+            new_questions = previous_questions + [quiz_data['question']]
+            supabase.table('quiz_sessions').update({
+                'previous_questions': new_questions
+            }).eq('id', session_id).execute()
 
         return quiz_data
 
